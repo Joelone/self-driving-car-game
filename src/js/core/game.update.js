@@ -5,6 +5,10 @@
  */
 function gameUpdate ( scope ) {
     return function update( tFrame ) {
+
+        if (scope.alive === false){
+            return;
+        }
         var state = scope.state || {};
 
         // If there are entities, iterate through them and call their `update` methods
@@ -13,8 +17,6 @@ function gameUpdate ( scope ) {
             // Loop through entities
             for (var entity in entities) {
                 // Fire off each active entities `render` method
-                entities[entity].onInput();
-
                 entities[entity].update();
             }
         }

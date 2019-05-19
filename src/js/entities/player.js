@@ -29,7 +29,7 @@ function Player(scope, x, y, getObjects, gameOver) {
     const sensors = 12;
 
     const threshold = 1;
-    let lookDistances = [...Array(500/threshold).keys()];
+    let lookDistances = [...Array(1024).keys()];
     var percentColors = [
         { pct: 0.0, color: { r: 0xff, g: 0x00, b: 0 } },
         { pct: 0.5, color: { r: 0xff, g: 0xff, b: 0 } },
@@ -100,36 +100,17 @@ function Player(scope, x, y, getObjects, gameOver) {
         return (Math.sin(angle * Math.PI / 180) * distance);
     };
 
-    player.onInput = () => {
-
-        if (keys.isPressed.ArrowLeft) {
-            player.state.position.d-=2.5;
-        }
-        if (keys.isPressed.ArrowRight) {
-            player.state.position.d+=2.5;
-        }
-        if (keys.isPressed.ArrowUp) {
-            player.state.position.speed += player.state.moveSpeed;
-        }
-        if (keys.isPressed.ArrowDown) {
-            player.state.position.speed -= player.state.moveSpeed;
-        }
-    };
 
     player.pointDistanceFormula = (x1, y1, x2, y2) => {
         return Math.sqrt(Math.pow(Math.abs(x1-x2), 2) + Math.pow(Math.abs(y1-y2), 2) );
     };
 
     player.update = () => {
-
-
-
         //detect game over
         const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
-        if (timeDelta > 3000) {
+        if (timeDelta > 10000) {
             return gameOver();
         }
-
 
         const objects = getObjects();
 
@@ -234,6 +215,26 @@ function Player(scope, x, y, getObjects, gameOver) {
         player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
         player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
 
+
+
+        // Generate neural network input
+        const networkInput = player.state.sensors;
+
+
+
+        // accept new game input from the NN
+        if (keys.isPressed.ArrowLeft) {
+            player.state.position.d-=2.5;
+        }
+        if (keys.isPressed.ArrowRight) {
+            player.state.position.d+=2.5;
+        }
+        if (keys.isPressed.ArrowUp) {
+            player.state.position.speed += player.state.moveSpeed;
+        }
+        if (keys.isPressed.ArrowDown) {
+            player.state.position.speed -= player.state.moveSpeed;
+        }
     };
 
     return player;

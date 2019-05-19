@@ -28,7 +28,6 @@ function Buoy(scope) {
         return Math.sqrt(Math.pow(Math.abs(marker.state.geometry.x - x), 2) + Math.pow(Math.abs(marker.state.geometry.y - y), 2) ) < marker.state.geometry.r;
     };
 
-    marker.onInput = () => { };
     marker.update = () => { };
     marker.render = () => {
 

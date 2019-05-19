@@ -32,6 +32,13 @@ function gameLoop ( scope ) {
 
     // Main game rendering loop
     loop.main = function mainLoop( tframe ) {
+
+        if (scope.alive === false){
+            window.cancelAnimationFrame( loop.stopLoop );
+
+            return;
+        }
+
         // Request a new Animation Frame
         // setting to `stopLoop` so animation can be stopped via
         // `window.cancelAnimationFrame( loop.stopLoop )`
@@ -103,13 +110,20 @@ function gameRender( scope ) {
         h = scope.constants.height;
 
     return function render() {
+
+
+        if (scope.alive === false){
+            return;
+        }
+
+
         // Clear out the canvas
         scope.context.clearRect(0, 0, w, h);
         
         // Spit out some text
-        scope.context.font = '32px Arial';
-        scope.context.fillStyle = '#fff';
-        scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
+        // scope.context.font = '32px Arial';
+        // scope.context.fillStyle = '#fff';
+        // scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
 
         // // If we want to show the FPS, then render it in the top right corner.
         // if (scope.constants.showFps) {
@@ -138,6 +152,10 @@ module.exports = gameRender;
  */
 function gameUpdate ( scope ) {
     return function update( tFrame ) {
+
+        if (scope.alive === false){
+            return;
+        }
         var state = scope.state || {};
 
         // If there are entities, iterate through them and call their `update` methods
@@ -146,8 +164,6 @@ function gameUpdate ( scope ) {
             // Loop through entities
             for (var entity in entities) {
                 // Fire off each active entities `render` method
-                entities[entity].onInput();
-
                 entities[entity].update();
             }
         }
@@ -222,10 +238,6 @@ function Boundary(scope, color) {
         return (Math.sin(angle * Math.PI / 180) * distance);
     };
 
-    boundary.onInput = () => {
-
-    };
-
     boundary.update = () => {
 
     };
@@ -266,7 +278,6 @@ function Buoy(scope) {
         return Math.sqrt(Math.pow(Math.abs(marker.state.geometry.x - x), 2) + Math.pow(Math.abs(marker.state.geometry.y - y), 2) ) < marker.state.geometry.r;
     };
 
-    marker.onInput = () => { };
     marker.update = () => { };
     marker.render = () => {
 
@@ -313,7 +324,7 @@ function Player(scope, x, y, getObjects, gameOver) {
     const sensors = 12;
 
     const threshold = 1;
-    let lookDistances = [...Array(500/threshold).keys()];
+    let lookDistances = [...Array(1024).keys()];
     var percentColors = [
         { pct: 0.0, color: { r: 0xff, g: 0x00, b: 0 } },
         { pct: 0.5, color: { r: 0xff, g: 0xff, b: 0 } },
@@ -384,36 +395,17 @@ function Player(scope, x, y, getObjects, gameOver) {
         return (Math.sin(angle * Math.PI / 180) * distance);
     };
 
-    player.onInput = () => {
-
-        if (keys.isPressed.ArrowLeft) {
-            player.state.position.d-=2.5;
-        }
-        if (keys.isPressed.ArrowRight) {
-            player.state.position.d+=2.5;
-        }
-        if (keys.isPressed.ArrowUp) {
-            player.state.position.speed += player.state.moveSpeed;
-        }
-        if (keys.isPressed.ArrowDown) {
-            player.state.position.speed -= player.state.moveSpeed;
-        }
-    };
 
     player.pointDistanceFormula = (x1, y1, x2, y2) => {
         return Math.sqrt(Math.pow(Math.abs(x1-x2), 2) + Math.pow(Math.abs(y1-y2), 2) );
     };
 
     player.update = () => {
-
-
-
         //detect game over
         const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
-        if (timeDelta > 3000) {
+        if (timeDelta > 10000) {
             return gameOver();
         }
-
 
         const objects = getObjects();
 
@@ -518,6 +510,26 @@ function Player(scope, x, y, getObjects, gameOver) {
         player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
         player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
 
+
+
+        // Generate neural network input
+        const networkInput = player.state.sensors;
+
+
+
+        // accept new game input from the NN
+        if (keys.isPressed.ArrowLeft) {
+            player.state.position.d-=2.5;
+        }
+        if (keys.isPressed.ArrowRight) {
+            player.state.position.d+=2.5;
+        }
+        if (keys.isPressed.ArrowUp) {
+            player.state.position.speed += player.state.moveSpeed;
+        }
+        if (keys.isPressed.ArrowDown) {
+            player.state.position.speed -= player.state.moveSpeed;
+        }
     };
 
     return player;
@@ -534,12 +546,13 @@ var gameLoop = require('./core/game.loop.js'),
     boundaryEnt = require('./entities/boundary.js'),
     buoyEnt = require('./entities/buoy.js'),
     // Utilities
-    cUtils = require('./utils/utils.canvas.js'); // require our canvas utils
+    cUtils = require('./utils/utils.canvas.js'),
+    $container = document.getElementById('container'); // require our canvas utils
 
 
 // https://github.com/zonetti/snake-neural-network/blob/49be7c056c871d0c8ab06329fc189255d137db26/src/runner.js
 // https://wagenaartje.github.io/neataptic/docs/neat/
-function Game(w, h, viewport, targetFps, showFps) {
+function Game(w, h, targetFps, showFps) {
     var map = {"boundaries":[[[47,133],[48,52],[108,34],[279,40],[464,35],[970,54],[1184,57],[1320,70],[1520,105],[1543,215],[1528,355],[1515,689],[1509,730],[1443,768],[1365,799],[1249,827],[1089,830],[1034,829],[978,828],[961,797],[953,788],[914,749],[884,698],[882,678],[884,663],[896,634],[919,622],[943,613],[971,608],[989,606],[1011,599],[1029,587],[1039,581],[1047,569],[1051,545],[1050,522],[1042,487],[1022,467],[991,451],[970,450],[926,449],[893,453],[862,463],[843,476],[808,500],[789,529],[758,579],[718,640],[706,663],[688,682],[645,694],[608,694],[525,700],[514,701],[466,703],[435,701],[423,698],[399,706],[384,724],[362,760],[336,779],[309,784],[259,790],[208,790],[186,789],[138,759],[63,516],[61,394],[46,118]],[[129,148],[170,139],[238,132],[281,130],[452,129],[638,137],[718,139],[827,139],[930,137],[1070,140],[1158,146],[1225,154],[1313,163],[1364,173],[1389,212],[1396,263],[1396,374],[1394,573],[1389,640],[1327,687],[1266,706],[1204,724],[1158,732],[1094,737],[1060,733],[1032,723],[1003,693],[1018,674],[1067,666],[1085,664],[1131,633],[1136,599],[1151,516],[1170,478],[1169,388],[1136,331],[1022,294],[872,305],[780,325],[721,432],[684,490],[639,547],[587,573],[516,592],[460,597],[347,598],[238,570],[212,503],[167,311],[147,233],[142,142]],[],[[204,704],[173,684],[172,657],[196,633],[231,627],[268,638],[279,669],[269,693],[218,706],[196,701]]],"buoys":[[104,94,120,1],[182,88,120,2],[265,83,120,3],[353,87,120,4],[452,80,120,5],[529,83,120,6],[594,82,120,7],[660,83,120,8],[720,86,120,9],[848,88,120,10],[930,87,120,11],[1029,91,120,12],[1119,99,120,13],[1201,103,120,14],[1302,107,120,15],[1390,130,120,16],[1441,146,120,17],[1471,194,120,18],[1468,302,120,19],[1459,409,120,20],[1458,490,120,21],[1438,576,120,22],[1428,659,120,23],[1400,714,120,24],[1300,756,120,25],[1210,762,120,26],[1081,777,120,27],[985,765,120,28],[973,724,120,29],[983,644,120,30],[1058,616,120,31],[1105,540,120,32],[1091,446,120,33],[1030,389,120,34],[938,376,120,35],[849,385,120,36],[770,453,120,37],[734,522,120,38],[650,592,120,39],[533,642,120,40],[439,645,120,41],[350,660,120,42],[270,665,120,43],[212,662,120,44],[149,555,120,45],[129,480,120,46],[107,378,120,47],[107,270,120,48],[101,201,120,49]]};
 
     const placeMode = "buoy";
@@ -551,6 +564,7 @@ function Game(w, h, viewport, targetFps, showFps) {
         targetFps: targetFps,
         showFps: showFps
     };
+    this.alive = true;
 
     // Instantiate an empty state object
     this.state = {};
@@ -562,10 +576,8 @@ function Game(w, h, viewport, targetFps, showFps) {
     // Get and store the canvas context as a global
     this.context = this.viewport.getContext('2d');
 
-    this.container = document.getElementById(viewport);
-
     // Append viewport into our container within the dom
-    this.container.insertBefore(this.viewport, this.container.firstChild);
+    $container.insertBefore(this.viewport, $container.firstChild);
 
     // Instantiate core modules with the current scope
     this.update = gameUpdate( this );
@@ -581,11 +593,9 @@ function Game(w, h, viewport, targetFps, showFps) {
     // load game map
     if (map) {
         map.boundaries.forEach((boundary) => {
-
             let b = new boundaryEnt(this, 'white');
             this.boundaries.push(b);
             this.state.entities['boundary'+Math.random()] = (b);
-
             boundary.forEach((point) => {
                 b.addPoint({x: point[0], y: point[1] });
             })
@@ -688,21 +698,27 @@ function Game(w, h, viewport, targetFps, showFps) {
         }
     }, () => {
         console.log('GAME OVER');
-
+        this.destruct();
     });
+
+
+    this.destruct = () => {
+        this.alive = false;
+        this.viewport.parentNode.removeChild(this.viewport);
+    };
 
 
     return this;
 }
 
 // Instantiate a new game in the global scope at 800px by 600px
-window.game = new Game(1600, 900, 'container', 60, true);
-window.game2 = new Game(1600, 900, 'container2', 60, true);
+new Game(1600, 900, 60, true);
+new Game(1600, 900, 60, true);
+new Game(1600, 900, 60, true);
+new Game(1600, 900, 60, true);
+new Game(1600, 900, 60, true);
+new Game(1600, 900, 60, true);
 
-console.log(window.game);
-console.log(window.game2);
-
-module.exports = [window.game, window.game2];
 },{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./entities/boundary.js":4,"./entities/buoy.js":5,"./entities/player.js":6,"./utils/utils.canvas.js":8,"./utils/utils.keysDown":10}],8:[function(require,module,exports){
 module.exports = {
     /** Determine the proper pixel ratio for the canvas */

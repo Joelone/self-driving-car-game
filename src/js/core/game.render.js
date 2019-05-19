@@ -11,13 +11,20 @@ function gameRender( scope ) {
         h = scope.constants.height;
 
     return function render() {
+
+
+        if (scope.alive === false){
+            return;
+        }
+
+
         // Clear out the canvas
         scope.context.clearRect(0, 0, w, h);
         
         // Spit out some text
-        scope.context.font = '32px Arial';
-        scope.context.fillStyle = '#fff';
-        scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
+        // scope.context.font = '32px Arial';
+        // scope.context.fillStyle = '#fff';
+        // scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
 
         // // If we want to show the FPS, then render it in the top right corner.
         // if (scope.constants.showFps) {

@@ -31,6 +31,13 @@ function gameLoop ( scope ) {
 
     // Main game rendering loop
     loop.main = function mainLoop( tframe ) {
+
+        if (scope.alive === false){
+            window.cancelAnimationFrame( loop.stopLoop );
+
+            return;
+        }
+
         // Request a new Animation Frame
         // setting to `stopLoop` so animation can be stopped via
         // `window.cancelAnimationFrame( loop.stopLoop )`

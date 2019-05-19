@@ -62,10 +62,6 @@ function Boundary(scope, color) {
         return (Math.sin(angle * Math.PI / 180) * distance);
     };
 
-    boundary.onInput = () => {
-
-    };
-
     boundary.update = () => {
 
     };
