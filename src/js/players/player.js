@@ -39,8 +39,15 @@ function Player(scope, x, y, getObjects) {
         for (let i = 0; i < sensors; i++) {
             const angle = player.state.position.d + (360 / sensors) * i;
 
+            if (i == 6){
+
+                scope.context.strokeStyle = 'red';
+            }else{
+
+                scope.context.strokeStyle = 'green';
+            }
+
             scope.context.beginPath();
-            scope.context.strokeStyle = 'red';
             scope.context.moveTo(player.state.position.x, player.state.position.y);
             scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
             scope.context.stroke();
@@ -91,30 +98,6 @@ function Player(scope, x, y, getObjects) {
 
     player.update = () => {
 
-        if (player.state.position.speed > 0) {
-            player.state.position.speed -= 0.1;
-        } else if (player.state.position.speed < 0) {
-            player.state.position.speed += 0.1;
-        }
-        player.state.position.speed = player.state.position.speed.boundary(-2, 12);
-
-        if (player.state.position.speed > 0 && player.state.position.speed < 0.1){
-            player.state.position.speed = 0;
-        }
-
-        if (player.state.position.speed > -0.1 && player.state.position.speed < 0){
-            player.state.position.speed = 0;
-        }
-
-
-        player.state.position.x = player.state.position.x + player.xForDA(player.state.position.d, player.state.position.speed);
-        player.state.position.y = player.state.position.y + player.yForDA(player.state.position.d, player.state.position.speed);
-        // Bind the player to the boundary
-        player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
-        player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
-
-
-
         // update lidar sensors
 
         for (let i = 0; i < sensors; i++) {
@@ -161,16 +144,12 @@ function Player(scope, x, y, getObjects) {
                                 return 1;
                             }
                         }
-
-                        for (var e; e = edgeScan(), e !== 0 && start < stop; ) {
+                        for (var e; e = edgeScan(), e !== 0 && start < stop; middle = Math.floor((start + stop) / 2)) {
                             if (e === 1) {
                                 stop = middle - 1
                             } else if (e == -1) {
                                 start = middle + 1
                             }
-
-                            // recalculate middle on every iteration
-                            middle = Math.floor((start + stop) / 2)
                         }
 
                         // if the current middle item is what we're looking for return it's index, else return -1
@@ -182,6 +161,50 @@ function Player(scope, x, y, getObjects) {
                 return Math.min(...distances);
             }));
         }
+
+
+        // update vehicle movement
+
+        if (player.state.position.speed > 0) {
+
+            if (player.state.sensors[0] > 13) {
+
+                player.state.position.speed -= 0.1;
+            }else {
+                player.state.position.speed = 0;
+            }
+
+        } else if (player.state.position.speed < 0) {
+
+
+            if (player.state.sensors[sensors/2] > 10) {
+
+                player.state.position.speed += 0.1;
+            }else {
+                player.state.position.speed = 0;
+            }
+
+            // player.state.position.speed += 0.1;
+        }
+
+        player.state.position.speed = player.state.position.speed.boundary(-2, 12);
+
+        if (player.state.position.speed > 0 && player.state.position.speed < 0.1){
+            player.state.position.speed = 0;
+        }
+
+        if (player.state.position.speed > -0.1 && player.state.position.speed < 0){
+            player.state.position.speed = 0;
+        }
+
+
+        player.state.position.x = player.state.position.x + player.xForDA(player.state.position.d, player.state.position.speed);
+        player.state.position.y = player.state.position.y + player.yForDA(player.state.position.d, player.state.position.speed);
+        // Bind the player to the boundary
+        player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
+        player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
+
+
     };
 
     return player;

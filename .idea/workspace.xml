@@ -2,16 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8d5de417-ca8d-47da-9aec-8ad53583ec10" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/src/js/players/progressMarker.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/js/utils/utils.click.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/game.bundle.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/game.bundle.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/js/game.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/js/game.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/js/players/boundary.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/js/players/boundary.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/js/players/player.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/js/players/player.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/js/utils/utils.keysDown.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/js/utils/utils.keysDown.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.bundle.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.bundle.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/styles/main.scss" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/main.scss" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/.tmp/" />
     <ignored path="$PROJECT_DIR$/temp/" />
@@ -51,8 +44,12 @@
       <file leaf-file-name="player.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/js/players/player.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="438">
-              <caret line="164" column="29" lean-forward="true" selection-start-line="164" selection-start-column="29" selection-end-line="164" selection-end-column="29" />
+            <state relative-caret-position="610">
+              <caret line="179" column="52" selection-start-line="179" selection-start-column="52" selection-end-line="179" selection-end-column="52" />
+              <folding>
+                <element signature="e#3872#6145#0" />
+                <element signature="e#4144#4851#0" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -216,12 +213,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1558243731814</updated>
-      <workItem from="1558243734589" duration="13975000" />
+      <workItem from="1558243734589" duration="15227000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="13975000" />
+    <option name="totallyTimeSpent" value="15227000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="562" y="23" width="1118" height="1027" extended-state="0" />
@@ -380,8 +377,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/js/players/player.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="438">
-          <caret line="164" column="29" lean-forward="true" selection-start-line="164" selection-start-column="29" selection-end-line="164" selection-end-column="29" />
+        <state relative-caret-position="610">
+          <caret line="179" column="52" selection-start-line="179" selection-start-column="52" selection-end-line="179" selection-end-column="52" />
+          <folding>
+            <element signature="e#3872#6145#0" />
+            <element signature="e#4144#4851#0" />
+          </folding>
         </state>
       </provider>
     </entry>
