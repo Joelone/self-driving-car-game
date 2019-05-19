@@ -1,10 +1,10 @@
-var keys = require('../utils/utils.keysDown.js'),
-    mathHelpers = require('../utils/utils.math.js');
-
+var keys = require('../utils/utils.keysDown.js')(),
+    intersection = require('../utils/utils.intersect');
+require('../utils/utils.math')
 /** Player Module
  * Main player entity module.
  */
-function Player(scope, x, y, boundaries) {
+function Player(scope, x, y, getObjects) {
     var player = this;
 
     // Create the initial state
@@ -15,6 +15,7 @@ function Player(scope, x, y, boundaries) {
             d: 0,
             speed: 0.0
         },
+        sensors: [],
         moveSpeed: 0.25
     };
 
@@ -22,20 +23,26 @@ function Player(scope, x, y, boundaries) {
     var height = 23,
         width = 16;
 
+    const sensors = 16;
+
+    const threshold = 1;
+    let lookDistances = [...Array(500/threshold).keys()];
+
     // Draw the player on the canvas
     player.render = () => {
 
         scope.context.strokeStyle = 'white';
         scope.context.lineWidth = '1';
-        /* begin sensor suite*/
 
-        for (let i = 0; i < 12; i++) {
-            const angle = player.state.position.d + (360 / 12) * i;
+        /* begin sensor view*/
+
+        for (let i = 0; i < sensors; i++) {
+            const angle = player.state.position.d + (360 / sensors) * i;
 
             scope.context.beginPath();
-            scope.context.fillStyle = 'red';
+            scope.context.strokeStyle = 'red';
             scope.context.moveTo(player.state.position.x, player.state.position.y);
-            scope.context.lineTo(player.state.position.x + player.xForDA(angle, 100), player.state.position.y + player.yForDA(angle, 100));
+            scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
             scope.context.stroke();
         }
 
@@ -69,10 +76,10 @@ function Player(scope, x, y, boundaries) {
     player.onInput = () => {
 
         if (keys.isPressed.ArrowLeft) {
-            player.state.position.d-=2;
+            player.state.position.d-=2.5;
         }
         if (keys.isPressed.ArrowRight) {
-            player.state.position.d+=2;
+            player.state.position.d+=2.5;
         }
         if (keys.isPressed.ArrowUp) {
             player.state.position.speed += player.state.moveSpeed;
@@ -89,7 +96,15 @@ function Player(scope, x, y, boundaries) {
         } else if (player.state.position.speed < 0) {
             player.state.position.speed += 0.1;
         }
-        player.state.position.speed = player.state.position.speed.boundary(-1, 5);
+        player.state.position.speed = player.state.position.speed.boundary(-2, 12);
+
+        if (player.state.position.speed > 0 && player.state.position.speed < 0.1){
+            player.state.position.speed = 0;
+        }
+
+        if (player.state.position.speed > -0.1 && player.state.position.speed < 0){
+            player.state.position.speed = 0;
+        }
 
 
         player.state.position.x = player.state.position.x + player.xForDA(player.state.position.d, player.state.position.speed);
@@ -99,6 +114,74 @@ function Player(scope, x, y, boundaries) {
         player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
 
 
+
+        // update lidar sensors
+
+        for (let i = 0; i < sensors; i++) {
+            const angle = player.state.position.d + (360 / sensors) * i;
+            const objects = getObjects();
+            player.state.sensors[i] = Math.min(...objects.boundaries.map((boundary) => {
+                const distances = boundary.getSegments().map((segment) => {
+                    function binarySearch (list) {
+                        // initial values for start, middle and end
+                        let start = 0;
+                        let stop = list.length - 1;
+                        let middle = Math.floor((start + stop) / 2);
+                        function edgeScan() {
+                            const output = [
+                                intersection(
+                                    player.state.position.x,
+                                    player.state.position.y,
+                                    player.state.position.x + player.xForDA(angle, list[middle]),
+                                    player.state.position.y + player.yForDA(angle, list[middle]),
+                                    segment[0][0],
+                                    segment[0][1],
+                                    segment[1][0],
+                                    segment[1][1]
+                                ),
+                                intersection(
+                                    player.state.position.x,
+                                    player.state.position.y,
+                                    player.state.position.x + player.xForDA(angle, list[middle] ),
+                                    player.state.position.y + player.yForDA(angle, list[middle] ),
+                                    segment[0][0],
+                                    segment[0][1],
+                                    segment[1][0],
+                                    segment[1][1]
+                                ),
+                            ];
+
+                            if (!output[0] && !output[1]) {
+                                return -1;
+                            }
+                            if (!output[0] && output[1]) {
+                                return 0;
+                            }
+                            if (output[0]) {
+                                return 1;
+                            }
+                        }
+
+                        for (var e; e = edgeScan(), e !== 0 && start < stop; ) {
+                            if (e === 1) {
+                                stop = middle - 1
+                            } else if (e == -1) {
+                                start = middle + 1
+                            }
+
+                            // recalculate middle on every iteration
+                            middle = Math.floor((start + stop) / 2)
+                        }
+
+                        // if the current middle item is what we're looking for return it's index, else return -1
+                        return list[middle]
+                    }
+                    const distance = binarySearch(lookDistances);
+                    return distance * threshold;
+                });
+                return Math.min(...distances);
+            }));
+        }
     };
 
     return player;

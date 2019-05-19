@@ -3,7 +3,7 @@
  * is pressed down at any given moment.
  * Returns getters for each key.
  */
-function keysDown() {
+function keysDown(onDown, onUp) {
     this.isPressed = {};
 
     const _isPressed = {};
@@ -20,16 +20,21 @@ function keysDown() {
     ];
 
 
-
-    // Set up `onkeydown` event handler.
-    document.onkeydown = function (ev) {
+    document.addEventListener('keydown', (ev) => {
         _isPressed[ev.code] = true;
-    };
+        onDown ? onDown(_isPressed) : null;
+    });
 
-    // Set up `onkeyup` event handler.
-    document.onkeyup = function (ev) {
+
+    document.addEventListener('keyup', (ev) => {
         _isPressed[ev.code] = false;
-    };
+        onUp ? onUp(_isPressed) : null;
+    });
+
+    // // Set up `onkeyup` event handler.
+    // document.onkeyup = function (ev) {
+    //     _isPressed[ev.code] = false;
+    // };
 
     // Define getters for each key
     // * Not strictly necessary. Could just return
@@ -48,4 +53,4 @@ function keysDown() {
     return this;
 }
 
-module.exports = keysDown();
+module.exports = keysDown;

@@ -158,7 +158,7 @@ function gameUpdate ( scope ) {
 
 module.exports = gameUpdate;
 },{}],4:[function(require,module,exports){
-    // Modules
+// Modules
 var gameLoop = require('./core/game.loop.js'),
     gameUpdate = require('./core/game.update.js'),
     gameRender = require('./core/game.render.js'),
@@ -169,6 +169,9 @@ var gameLoop = require('./core/game.loop.js'),
     cUtils = require('./utils/utils.canvas.js'), // require our canvas utils
     $container = document.getElementById('container');
 
+
+// https://github.com/zonetti/snake-neural-network/blob/49be7c056c871d0c8ab06329fc189255d137db26/src/runner.js
+// https://wagenaartje.github.io/neataptic/docs/neat/
 function Game(w, h, targetFps, showFps) {
     var that;
 
@@ -185,6 +188,9 @@ function Game(w, h, targetFps, showFps) {
 
   // Generate a canvas and store it as our viewport
     this.viewport = cUtils.generateCanvas(w, h);
+
+
+
     this.viewport.id = "gameViewport";
 
     // Get and store the canvas context as a global
@@ -198,25 +204,56 @@ function Game(w, h, targetFps, showFps) {
     this.render = gameRender( this );
     this.loop = gameLoop( this );
 
-    that = this;
+    this.state.entities = this.state.entities || {};
 
-    let boundaries;
-    let activeBoundary = 0;
+    var activeBoundary = 0;
+    var boundaries = [ ];
+
+    require('./utils/utils.keysDown')((e) => {
+        if (e.KeyS) {
+            activeBoundary +=1;
+            if (activeBoundary > boundaries.length-1) {
+                activeBoundary = boundaries.length-1 ;
+            }
+        }
+        if (e.KeyA) {
+            activeBoundary -=1;
+            if (activeBoundary < 0) {
+                activeBoundary = 0;
+            }
+        }
+
+        if (e.KeyN) {
+            let b = new boundaryEnt(this, 'white');
+            boundaries.push(b);
+            this.state.entities['boundary'+Math.random()] = (b);
+        }
+        if (e.KeyZ) {
+            boundaries[activeBoundary].removeNewest();
+        }
+        if (e.KeyT) {
+            // print out for reloading via stdin
+            console.log('attt');
+            const output = [];
+            boundaries.forEach((boundary) => {
+                output.push(boundary.state.points)
+            });
+            console.log(JSON.stringify(output));
+        }
+    });
+
+    this.viewport.addEventListener("mousedown", (evt) => {
+        if (boundaries[activeBoundary])
+            boundaries[activeBoundary].addPoint(evt);
+    }, false);
 
 
-    var createBoundary = function createPlayer() {
-        that.state.entities = that.state.entities || {};
-        that.state.entities.boundary1 = (new boundaryEnt(that));
-        that.state.entities.boundary2 = (new boundaryEnt(that));
-    }();
+    this.state.entities.player = new playerEnt(this, 100, 100, () => {
+        return {
+            boundaries
+        }
+    });
 
-
-    var createPlayer = function createPlayer() {
-        that.state.entities = that.state.entities || {};
-        that.state.entities.player = new playerEnt(that, 100, 100, () => {
-            return boundaries = [that.state.entities.boundary1, that.state.entities.boundary2];
-        });
-    }();
 
     return this;
 }
@@ -225,23 +262,19 @@ function Game(w, h, targetFps, showFps) {
 window.game = new Game(800, 600, 60, true);
 
 module.exports = game;
-},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./players/boundary.js":5,"./players/player.js":6,"./utils/utils.canvas.js":7}],5:[function(require,module,exports){
-var keys = require('../utils/utils.keysDown.js'),
-    mathHelpers = require('../utils/utils.math.js');
-
+},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./players/boundary.js":5,"./players/player.js":6,"./utils/utils.canvas.js":7,"./utils/utils.keysDown":9}],5:[function(require,module,exports){
 /** Player Module
  * Main player entity module.
  */
-function Boundary(scope, x, y) {
+function Boundary(scope, color) {
     var boundary = this;
 
+    boundary.segments = [];
     // Create the initial state
     boundary.state = {
         points: [
-            [100, 100],
-            [100, 200],
-            [200, 200]
-        ]
+        ],
+        dirty: false
     };
 
     // Draw the player on the canvas
@@ -249,14 +282,41 @@ function Boundary(scope, x, y) {
 
         /* begin sensor suite*/
 
-        for (let i=0;i<Math.max(0, boundary.state.points.length - 1); i++) {
+        boundary.segments.forEach((segment) => {
+
             scope.context.beginPath();
-            scope.context.strokeStyle = 'green';
-            scope.context.lineWidth = '5';
-            scope.context.moveTo(boundary.state.points[i][0], boundary.state.points[i][1]);
-            scope.context.lineTo(boundary.state.points[i+1][0], boundary.state.points[i+1][1]);
+            scope.context.strokeStyle = color;
+            scope.context.fillStyle = 'red';
+            scope.context.lineWidth = '6';
+            scope.context.moveTo(segment[0][0], segment[0][1]);
+            scope.context.lineTo(segment[1][0], segment[1][1]);
             scope.context.stroke();
+        });
+    };
+
+    boundary.getSegments = () => {
+        if (!boundary.state.dirty) {
+            return boundary.segments;
         }
+        const segments = [];
+        for (let i=0;i<Math.max(0, boundary.state.points.length - 1); i++) {
+            segments.push([
+                [boundary.state.points[i][0], boundary.state.points[i][1]],
+                [boundary.state.points[i+1][0], boundary.state.points[i+1][1]]
+            ]);
+        }
+        boundary.segments = segments;
+        boundary.state.isDirty = false;
+        return segments;
+    };
+
+    boundary.addPoint = (evt) => {
+        boundary.state.points.push([evt.clientX, evt.clientY]);
+        boundary.state.dirty = true;
+    };
+    boundary.removeNewest = (evt) => {
+        boundary.state.points.pop();
+        boundary.state.dirty = true;
     };
 
     boundary.xForDA = (angle, distance) => {
@@ -280,14 +340,14 @@ function Boundary(scope, x, y) {
 }
 
 module.exports = Boundary;
-},{"../utils/utils.keysDown.js":8,"../utils/utils.math.js":9}],6:[function(require,module,exports){
-var keys = require('../utils/utils.keysDown.js'),
-    mathHelpers = require('../utils/utils.math.js');
-
+},{}],6:[function(require,module,exports){
+var keys = require('../utils/utils.keysDown.js')(),
+    intersection = require('../utils/utils.intersect');
+require('../utils/utils.math')
 /** Player Module
  * Main player entity module.
  */
-function Player(scope, x, y, boundaries) {
+function Player(scope, x, y, getObjects) {
     var player = this;
 
     // Create the initial state
@@ -298,6 +358,7 @@ function Player(scope, x, y, boundaries) {
             d: 0,
             speed: 0.0
         },
+        sensors: [],
         moveSpeed: 0.25
     };
 
@@ -305,20 +366,26 @@ function Player(scope, x, y, boundaries) {
     var height = 23,
         width = 16;
 
+    const sensors = 16;
+
+    const threshold = 1;
+    let lookDistances = [...Array(500/threshold).keys()];
+
     // Draw the player on the canvas
     player.render = () => {
 
         scope.context.strokeStyle = 'white';
         scope.context.lineWidth = '1';
-        /* begin sensor suite*/
 
-        for (let i = 0; i < 12; i++) {
-            const angle = player.state.position.d + (360 / 12) * i;
+        /* begin sensor view*/
+
+        for (let i = 0; i < sensors; i++) {
+            const angle = player.state.position.d + (360 / sensors) * i;
 
             scope.context.beginPath();
-            scope.context.fillStyle = 'red';
+            scope.context.strokeStyle = 'red';
             scope.context.moveTo(player.state.position.x, player.state.position.y);
-            scope.context.lineTo(player.state.position.x + player.xForDA(angle, 100), player.state.position.y + player.yForDA(angle, 100));
+            scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
             scope.context.stroke();
         }
 
@@ -352,10 +419,10 @@ function Player(scope, x, y, boundaries) {
     player.onInput = () => {
 
         if (keys.isPressed.ArrowLeft) {
-            player.state.position.d-=2;
+            player.state.position.d-=2.5;
         }
         if (keys.isPressed.ArrowRight) {
-            player.state.position.d+=2;
+            player.state.position.d+=2.5;
         }
         if (keys.isPressed.ArrowUp) {
             player.state.position.speed += player.state.moveSpeed;
@@ -372,7 +439,15 @@ function Player(scope, x, y, boundaries) {
         } else if (player.state.position.speed < 0) {
             player.state.position.speed += 0.1;
         }
-        player.state.position.speed = player.state.position.speed.boundary(-1, 5);
+        player.state.position.speed = player.state.position.speed.boundary(-2, 12);
+
+        if (player.state.position.speed > 0 && player.state.position.speed < 0.1){
+            player.state.position.speed = 0;
+        }
+
+        if (player.state.position.speed > -0.1 && player.state.position.speed < 0){
+            player.state.position.speed = 0;
+        }
 
 
         player.state.position.x = player.state.position.x + player.xForDA(player.state.position.d, player.state.position.speed);
@@ -382,13 +457,81 @@ function Player(scope, x, y, boundaries) {
         player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
 
 
+
+        // update lidar sensors
+
+        for (let i = 0; i < sensors; i++) {
+            const angle = player.state.position.d + (360 / sensors) * i;
+            const objects = getObjects();
+            player.state.sensors[i] = Math.min(...objects.boundaries.map((boundary) => {
+                const distances = boundary.getSegments().map((segment) => {
+                    function binarySearch (list) {
+                        // initial values for start, middle and end
+                        let start = 0;
+                        let stop = list.length - 1;
+                        let middle = Math.floor((start + stop) / 2);
+                        function edgeScan() {
+                            const output = [
+                                intersection(
+                                    player.state.position.x,
+                                    player.state.position.y,
+                                    player.state.position.x + player.xForDA(angle, list[middle]),
+                                    player.state.position.y + player.yForDA(angle, list[middle]),
+                                    segment[0][0],
+                                    segment[0][1],
+                                    segment[1][0],
+                                    segment[1][1]
+                                ),
+                                intersection(
+                                    player.state.position.x,
+                                    player.state.position.y,
+                                    player.state.position.x + player.xForDA(angle, list[middle] ),
+                                    player.state.position.y + player.yForDA(angle, list[middle] ),
+                                    segment[0][0],
+                                    segment[0][1],
+                                    segment[1][0],
+                                    segment[1][1]
+                                ),
+                            ];
+
+                            if (!output[0] && !output[1]) {
+                                return -1;
+                            }
+                            if (!output[0] && output[1]) {
+                                return 0;
+                            }
+                            if (output[0]) {
+                                return 1;
+                            }
+                        }
+
+                        for (var e; e = edgeScan(), e !== 0 && start < stop; ) {
+                            if (e === 1) {
+                                stop = middle - 1
+                            } else if (e == -1) {
+                                start = middle + 1
+                            }
+
+                            // recalculate middle on every iteration
+                            middle = Math.floor((start + stop) / 2)
+                        }
+
+                        // if the current middle item is what we're looking for return it's index, else return -1
+                        return list[middle]
+                    }
+                    const distance = binarySearch(lookDistances);
+                    return distance * threshold;
+                });
+                return Math.min(...distances);
+            }));
+        }
     };
 
     return player;
 }
 
 module.exports = Player;
-},{"../utils/utils.keysDown.js":8,"../utils/utils.math.js":9}],7:[function(require,module,exports){
+},{"../utils/utils.intersect":8,"../utils/utils.keysDown.js":9,"../utils/utils.math":10}],7:[function(require,module,exports){
 module.exports = {
     /** Determine the proper pixel ratio for the canvas */
     getPixelRatio : function getPixelRatio(context) {
@@ -435,12 +578,27 @@ module.exports = {
     }
 };
 },{}],8:[function(require,module,exports){
+'use strict';
+
+module.exports = (a,b,c,d,p,q,r,s) => {
+    let det, gamma, lambda;
+    det = (c - a) * (s - q) - (r - p) * (d - b);
+    if (det === 0) {
+        return false;
+    } else {
+        lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
+        gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+        return ((-0.01 < lambda && lambda < 1.01) && (-0.01 < gamma && gamma < 1.01));
+    }
+};
+
+},{}],9:[function(require,module,exports){
 /** keysDown Utility Module
  * Monitors and determines whether a key 
  * is pressed down at any given moment.
  * Returns getters for each key.
  */
-function keysDown() {
+function keysDown(onDown, onUp) {
     this.isPressed = {};
 
     const _isPressed = {};
@@ -457,16 +615,21 @@ function keysDown() {
     ];
 
 
-
-    // Set up `onkeydown` event handler.
-    document.onkeydown = function (ev) {
+    document.addEventListener('keydown', (ev) => {
         _isPressed[ev.code] = true;
-    };
+        onDown ? onDown(_isPressed) : null;
+    });
 
-    // Set up `onkeyup` event handler.
-    document.onkeyup = function (ev) {
+
+    document.addEventListener('keyup', (ev) => {
         _isPressed[ev.code] = false;
-    };
+        onUp ? onUp(_isPressed) : null;
+    });
+
+    // // Set up `onkeyup` event handler.
+    // document.onkeyup = function (ev) {
+    //     _isPressed[ev.code] = false;
+    // };
 
     // Define getters for each key
     // * Not strictly necessary. Could just return
@@ -485,8 +648,8 @@ function keysDown() {
     return this;
 }
 
-module.exports = keysDown();
-},{}],9:[function(require,module,exports){
+module.exports = keysDown;
+},{}],10:[function(require,module,exports){
 /** 
  * Number.prototype.boundary
  * Binds a number between a minimum and a maximum amount.

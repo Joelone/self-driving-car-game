@@ -1,19 +1,15 @@
-var keys = require('../utils/utils.keysDown.js'),
-    mathHelpers = require('../utils/utils.math.js');
-
 /** Player Module
  * Main player entity module.
  */
-function Boundary(scope, x, y) {
+function Boundary(scope, color) {
     var boundary = this;
 
+    boundary.segments = [];
     // Create the initial state
     boundary.state = {
         points: [
-            [100, 100],
-            [100, 200],
-            [200, 200]
-        ]
+        ],
+        dirty: false
     };
 
     // Draw the player on the canvas
@@ -21,14 +17,41 @@ function Boundary(scope, x, y) {
 
         /* begin sensor suite*/
 
-        for (let i=0;i<Math.max(0, boundary.state.points.length - 1); i++) {
+        boundary.segments.forEach((segment) => {
+
             scope.context.beginPath();
-            scope.context.strokeStyle = 'green';
-            scope.context.lineWidth = '5';
-            scope.context.moveTo(boundary.state.points[i][0], boundary.state.points[i][1]);
-            scope.context.lineTo(boundary.state.points[i+1][0], boundary.state.points[i+1][1]);
+            scope.context.strokeStyle = color;
+            scope.context.fillStyle = 'red';
+            scope.context.lineWidth = '6';
+            scope.context.moveTo(segment[0][0], segment[0][1]);
+            scope.context.lineTo(segment[1][0], segment[1][1]);
             scope.context.stroke();
+        });
+    };
+
+    boundary.getSegments = () => {
+        if (!boundary.state.dirty) {
+            return boundary.segments;
         }
+        const segments = [];
+        for (let i=0;i<Math.max(0, boundary.state.points.length - 1); i++) {
+            segments.push([
+                [boundary.state.points[i][0], boundary.state.points[i][1]],
+                [boundary.state.points[i+1][0], boundary.state.points[i+1][1]]
+            ]);
+        }
+        boundary.segments = segments;
+        boundary.state.isDirty = false;
+        return segments;
+    };
+
+    boundary.addPoint = (evt) => {
+        boundary.state.points.push([evt.clientX, evt.clientY]);
+        boundary.state.dirty = true;
+    };
+    boundary.removeNewest = (evt) => {
+        boundary.state.points.pop();
+        boundary.state.dirty = true;
     };
 
     boundary.xForDA = (angle, distance) => {
