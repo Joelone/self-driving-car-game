@@ -370,6 +370,33 @@ function Player(scope, x, y, getObjects) {
 
     const threshold = 1;
     let lookDistances = [...Array(500/threshold).keys()];
+    var percentColors = [
+        { pct: 0.0, color: { r: 0xff, g: 0x00, b: 0 } },
+        { pct: 0.5, color: { r: 0xff, g: 0xff, b: 0 } },
+        { pct: 1.0, color: { r: 0x00, g: 0xff, b: 0 } } ];
+
+    var getColorForPercentage = function(pct) {
+        for (var i = 1; i < percentColors.length - 1; i++) {
+            if (pct < percentColors[i].pct) {
+                break;
+            }
+        }
+        var lower = percentColors[i - 1];
+        var upper = percentColors[i];
+        var range = upper.pct - lower.pct;
+        var rangePct = (pct - lower.pct) / range;
+        var pctLower = 1 - rangePct;
+        var pctUpper = rangePct;
+        var color = {
+            r: Math.floor(lower.color.r * pctLower + upper.color.r * pctUpper),
+            g: Math.floor(lower.color.g * pctLower + upper.color.g * pctUpper),
+            b: Math.floor(lower.color.b * pctLower + upper.color.b * pctUpper)
+        };
+        return 'rgb(' + [color.r, color.g, color.b].join(',') + ')';
+        // or output as hex if preferred
+    }
+
+
 
     // Draw the player on the canvas
     player.render = () => {
@@ -382,15 +409,11 @@ function Player(scope, x, y, getObjects) {
         for (let i = 0; i < sensors; i++) {
             const angle = player.state.position.d + (360 / sensors) * i;
 
-            if (i == 6){
-
-                scope.context.strokeStyle = 'red';
-            }else{
-
-                scope.context.strokeStyle = 'green';
-            }
-
             scope.context.beginPath();
+            if (i == 0) {
+                console.log(getColorForPercentage(player.state.sensors[i] / 500))
+            }
+            scope.context.strokeStyle = getColorForPercentage(player.state.sensors[i] / 500);
             scope.context.moveTo(player.state.position.x, player.state.position.y);
             scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
             scope.context.stroke();
