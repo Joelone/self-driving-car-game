@@ -158,128 +158,6 @@ function gameUpdate ( scope ) {
 
 module.exports = gameUpdate;
 },{}],4:[function(require,module,exports){
-// Modules
-var gameLoop = require('./core/game.loop.js'),
-    gameUpdate = require('./core/game.update.js'),
-    gameRender = require('./core/game.render.js'),
-    // Entities
-    playerEnt = require('./players/player.js'),
-    boundaryEnt = require('./players/boundary.js'),
-    // Utilities
-    cUtils = require('./utils/utils.canvas.js'), // require our canvas utils
-    $container = document.getElementById('container');
-
-
-var map = [[[47,133],[48,52],[108,34],[279,40],[464,35],[970,54],[1184,57],[1320,70],[1520,105],[1543,215],[1528,355],[1515,689],[1509,730],[1443,768],[1365,799],[1249,827],[1089,830],[1034,829],[978,828],[961,797],[953,788],[914,749],[884,698],[882,678],[884,663],[896,634],[919,622],[943,613],[971,608],[989,606],[1011,599],[1029,587],[1039,581],[1047,569],[1051,545],[1050,522],[1042,487],[1022,467],[991,451],[970,450],[926,449],[893,453],[862,463],[843,476],[808,500],[789,529],[758,579],[718,640],[706,663],[688,682],[645,694],[608,694],[525,700],[514,701],[466,703],[435,701],[423,698],[399,706],[384,724],[362,760],[336,779],[309,784],[259,790],[208,790],[186,789],[138,759],[63,516],[61,394],[46,118]],[[129,148],[170,139],[238,132],[281,130],[452,129],[638,137],[718,139],[827,139],[930,137],[1070,140],[1158,146],[1225,154],[1313,163],[1364,173],[1389,212],[1396,263],[1396,374],[1394,573],[1389,640],[1327,687],[1266,706],[1204,724],[1158,732],[1094,737],[1060,733],[1032,723],[1003,693],[1018,674],[1067,666],[1085,664],[1131,633],[1136,599],[1151,516],[1170,478],[1169,388],[1136,331],[1022,294],[872,305],[780,325],[721,432],[684,490],[639,547],[587,573],[516,592],[460,597],[347,598],[238,570],[212,503],[167,311],[147,233],[142,142]],[],[[204,704],[173,684],[172,657],[196,633],[231,627],[268,638],[279,669],[269,693],[218,706],[196,701]]];
-
-// https://github.com/zonetti/snake-neural-network/blob/49be7c056c871d0c8ab06329fc189255d137db26/src/runner.js
-// https://wagenaartje.github.io/neataptic/docs/neat/
-function Game(w, h, targetFps, showFps) {
-    var that;
-
-    // Setup some constants
-    this.constants = {
-        width: w,
-        height: h,
-        targetFps: targetFps,
-        showFps: showFps
-    };
-
-    // Instantiate an empty state object
-    this.state = {};
-
-  // Generate a canvas and store it as our viewport
-    this.viewport = cUtils.generateCanvas(w, h);
-
-
-
-    this.viewport.id = "gameViewport";
-
-    // Get and store the canvas context as a global
-    this.context = this.viewport.getContext('2d');
-
-    // Append viewport into our container within the dom
-    $container.insertBefore(this.viewport, $container.firstChild);
-
-    // Instantiate core modules with the current scope
-    this.update = gameUpdate( this );
-    this.render = gameRender( this );
-    this.loop = gameLoop( this );
-
-    this.state.entities = this.state.entities || {};
-
-    var activeBoundary = 0;
-    var boundaries = [ ];
-
-    // load game map
-    if (map.length) {
-        map.forEach((boundary) => {
-
-            let b = new boundaryEnt(this, 'white');
-            boundaries.push(b);
-            this.state.entities['boundary'+Math.random()] = (b);
-
-            boundary.forEach((point) => {
-                b.addPoint({x: point[0], y: point[1] });
-            })
-        });
-    }
-
-
-    require('./utils/utils.keysDown')((e) => {
-        if (e.KeyS) {
-            activeBoundary +=1;
-            if (activeBoundary > boundaries.length-1) {
-                activeBoundary = boundaries.length-1 ;
-            }
-        }
-        if (e.KeyA) {
-            activeBoundary -=1;
-            if (activeBoundary < 0) {
-                activeBoundary = 0;
-            }
-        }
-
-        if (e.KeyN) {
-            let b = new boundaryEnt(this, 'white');
-            boundaries.push(b);
-            this.state.entities['boundary'+Math.random()] = (b);
-        }
-        if (e.KeyZ) {
-            boundaries[activeBoundary].removeNewest();
-        }
-        if (e.KeyT) {
-            // print out for reloading via stdin
-            console.log('attt');
-            const output = [];
-            boundaries.forEach((boundary) => {
-                output.push(boundary.state.points)
-            });
-            console.log(JSON.stringify(output));
-        }
-    });
-
-    this.viewport.addEventListener("mousedown", (evt) => {
-        if (boundaries[activeBoundary])
-            boundaries[activeBoundary].addPoint({ x: evt.clientX, y: evt.clientY });
-    }, false);
-
-
-    this.state.entities.player = new playerEnt(this, 100, 100, () => {
-        return {
-            boundaries
-        }
-    });
-
-
-    return this;
-}
-
-// Instantiate a new game in the global scope at 800px by 600px
-window.game = new Game(1600, 900, 60, true);
-
-module.exports = game;
-},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./players/boundary.js":5,"./players/player.js":6,"./utils/utils.canvas.js":7,"./utils/utils.keysDown":9}],5:[function(require,module,exports){
 /** Player Module
  * Main player entity module.
  */
@@ -357,6 +235,54 @@ function Boundary(scope, color) {
 }
 
 module.exports = Boundary;
+},{}],5:[function(require,module,exports){
+
+function Buoy(scope) {
+    const marker = this;
+
+    marker.state = {
+        geometry: {
+            x: 0,
+            y: 0,
+            r: 0
+        },
+        score: 0
+    };
+
+    marker.setMarkPoint = (x, y) => {
+        marker.state.geometry.x = x;
+        marker.state.geometry.y = y;
+    };
+
+    marker.setMarkRadius = (r) => {
+        marker.state.geometry.r = r;
+    };
+
+    marker.setMarkScore = (s) => {
+        marker.state.score = s;
+    };
+
+    marker.isPointInside = (x, y) => {
+        return Math.sqrt(Math.pow(Math.abs(marker.state.geometry.x - x), 2) + Math.pow(Math.abs(marker.state.geometry.y - y), 2) ) < marker.state.geometry.r;
+    };
+
+    marker.onInput = () => {};
+    marker.update = () => {
+
+    };
+    marker.render = () => {
+
+        scope.context.fillStyle = 'rgba(255,0,0,0.25)';
+        scope.context.beginPath();
+        scope.context.arc(marker.state.geometry.x, marker.state.geometry.y, marker.state.geometry.r, 0, 2 * Math.PI);
+        scope.context.fill();
+        scope.context.fillStyle = 'white';
+
+        scope.context.fillText(marker.state.score, marker.state.geometry.x, marker.state.geometry.y);
+    }
+}
+
+module.exports = Buoy;
 },{}],6:[function(require,module,exports){
 var keys = require('../utils/utils.keysDown.js')(),
     intersection = require('../utils/utils.intersect');
@@ -364,7 +290,8 @@ require('../utils/utils.math')
 /** Player Module
  * Main player entity module.
  */
-function Player(scope, x, y, getObjects) {
+
+function Player(scope, x, y, getObjects, gameOver) {
     var player = this;
 
     // Create the initial state
@@ -376,7 +303,9 @@ function Player(scope, x, y, getObjects) {
             speed: 0.0
         },
         sensors: [],
-        moveSpeed: 0.25
+        moveSpeed: 0.25,
+        score: 0,
+        timeSinceLastScoreUpdate: Date.now()
     };
 
     // Set up any other constants
@@ -411,7 +340,7 @@ function Player(scope, x, y, getObjects) {
         };
         return 'rgb(' + [color.r, color.g, color.b].join(',') + ')';
         // or output as hex if preferred
-    }
+    };
 
 
 
@@ -443,6 +372,10 @@ function Player(scope, x, y, getObjects) {
         scope.context.moveTo(player.state.position.x + player.xForDA(player.state.position.d, 20), player.state.position.y + player.yForDA(player.state.position.d, 20));
         scope.context.lineTo(player.state.position.x + player.xForDA(player.state.position.d, -10), player.state.position.y + player.yForDA(player.state.position.d, -10));
         scope.context.stroke();
+        scope.context.fillStyle = 'white';
+
+        scope.context.fillText(player.state.score, player.state.position.x, player.state.position.y);
+
     };
 
     player.xForDA = (angle, distance) => {
@@ -469,114 +402,119 @@ function Player(scope, x, y, getObjects) {
         }
     };
 
+    player.pointDistanceFormula = (x1, y1, x2, y2) => {
+        return Math.sqrt(Math.pow(Math.abs(x1-x2), 2) + Math.pow(Math.abs(y1-y2), 2) );
+    };
+
     player.update = () => {
+        const objects = getObjects();
+
+        //detect new scores
+        objects.buoys.forEach((buoy) => {
+            const intersectingBuoy = player.pointDistanceFormula(player.state.position.x, player.state.position.y, buoy.state.geometry.x, buoy.state.geometry.y) < buoy.state.geometry.r;
+            if (intersectingBuoy && buoy.state.score == player.state.score + 1) {
+
+                player.state.score = buoy.state.score; // winner!
+                player.state.timeSinceLastScoreUpdate = Date.now();
+
+                buoy.state.score = buoy.state.score + objects.buoys.length; // increment buoy score so we can loop infinitely
+            }
+        });
+
+        //detect game over
+        const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
+        if (timeDelta > 3000) {
+            return gameOver();
+        }
 
         // update lidar sensors
-
         for (let i = 0; i < sensors; i++) {
-            const angle = player.state.position.d + (360 / sensors) * i;
-            const objects = getObjects();
-            player.state.sensors[i] = Math.min(...objects.boundaries.map((boundary) => {
-                const distances = boundary.getSegments().map((segment) => {
-                    function binarySearch (list) {
-                        // initial values for start, middle and end
-                        let start = 0;
-                        let stop = list.length - 1;
-                        let middle = Math.floor((start + stop) / 2);
-                        function edgeScan() {
-                            const output = [
-                                intersection(
-                                    player.state.position.x,
-                                    player.state.position.y,
-                                    player.state.position.x + player.xForDA(angle, list[middle]),
-                                    player.state.position.y + player.yForDA(angle, list[middle]),
-                                    segment[0][0],
-                                    segment[0][1],
-                                    segment[1][0],
-                                    segment[1][1]
-                                ),
-                                intersection(
-                                    player.state.position.x,
-                                    player.state.position.y,
-                                    player.state.position.x + player.xForDA(angle, list[middle] ),
-                                    player.state.position.y + player.yForDA(angle, list[middle] ),
-                                    segment[0][0],
-                                    segment[0][1],
-                                    segment[1][0],
-                                    segment[1][1]
-                                ),
-                            ];
+                const angle = player.state.position.d + (360 / sensors) * i;
+                player.state.sensors[i] = Math.min(...objects.boundaries.map((boundary) => {
+                    const distances = boundary.getSegments().map((segment) => {
+                        function binarySearch(list) {
+                            let start = 0;
+                            let stop = list.length - 1;
+                            let middle = Math.floor((start + stop) / 2);
 
-                            if (!output[0] && !output[1]) {
-                                return -1;
+                            function edgeScan() {
+                                const output = [
+                                    intersection(
+                                        player.state.position.x,
+                                        player.state.position.y,
+                                        player.state.position.x + player.xForDA(angle, list[middle]),
+                                        player.state.position.y + player.yForDA(angle, list[middle]),
+                                        segment[0][0],
+                                        segment[0][1],
+                                        segment[1][0],
+                                        segment[1][1]
+                                    ),
+                                    intersection(
+                                        player.state.position.x,
+                                        player.state.position.y,
+                                        player.state.position.x + player.xForDA(angle, list[middle]),
+                                        player.state.position.y + player.yForDA(angle, list[middle]),
+                                        segment[0][0],
+                                        segment[0][1],
+                                        segment[1][0],
+                                        segment[1][1]
+                                    ),
+                                ];
+                                if (!output[0] && !output[1]) {
+                                    return -1;
+                                }
+                                if (!output[0] && output[1]) {
+                                    return 0;
+                                }
+                                if (output[0]) {
+                                    return 1;
+                                }
                             }
-                            if (!output[0] && output[1]) {
-                                return 0;
+
+                            for (var e; e = edgeScan(), e !== 0 && start < stop; middle = Math.floor((start + stop) / 2)) {
+                                if (e === 1) {
+                                    stop = middle - 1
+                                } else if (e == -1) {
+                                    start = middle + 1
+                                }
                             }
-                            if (output[0]) {
-                                return 1;
-                            }
-                        }
-                        for (var e; e = edgeScan(), e !== 0 && start < stop; middle = Math.floor((start + stop) / 2)) {
-                            if (e === 1) {
-                                stop = middle - 1
-                            } else if (e == -1) {
-                                start = middle + 1
-                            }
+                            // if the current middle item is what we're looking for return it's index, else return -1
+                            return list[middle]
                         }
 
-                        // if the current middle item is what we're looking for return it's index, else return -1
-                        return list[middle]
-                    }
-                    const distance = binarySearch(lookDistances);
-                    return distance * threshold;
-                });
-                return Math.min(...distances);
-            }));
-        }
+                        const distance = binarySearch(lookDistances);
+                        return distance * threshold;
+                    });
+                    return Math.min(...distances);
+                }));
+            }
 
 
         // update vehicle movement
-
         if (player.state.position.speed > 0) {
-
             if (player.state.sensors[0] > 16) {
-
                 player.state.position.speed -= 0.1;
-            }else {
+            } else {
                 player.state.position.speed = 0;
             }
-
         } else if (player.state.position.speed < 0) {
-
-
-            if (player.state.sensors[sensors/2] > 16) {
-
+            if (player.state.sensors[sensors / 2] > 16) {
                 player.state.position.speed += 0.1;
-            }else {
+            } else {
                 player.state.position.speed = 0;
             }
-
-            // player.state.position.speed += 0.1;
         }
-
         player.state.position.speed = player.state.position.speed.boundary(-2, 12);
-
-        if (player.state.position.speed > 0 && player.state.position.speed < 0.1){
+        if (player.state.position.speed > 0 && player.state.position.speed < 0.1) {
             player.state.position.speed = 0;
         }
-
-        if (player.state.position.speed > -0.1 && player.state.position.speed < 0){
+        if (player.state.position.speed > -0.1 && player.state.position.speed < 0) {
             player.state.position.speed = 0;
         }
-
-
         player.state.position.x = player.state.position.x + player.xForDA(player.state.position.d, player.state.position.speed);
         player.state.position.y = player.state.position.y + player.yForDA(player.state.position.d, player.state.position.speed);
-        // Bind the player to the boundary
         player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
         player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
-
 
     };
 
@@ -584,7 +522,183 @@ function Player(scope, x, y, getObjects) {
 }
 
 module.exports = Player;
-},{"../utils/utils.intersect":8,"../utils/utils.keysDown.js":9,"../utils/utils.math":10}],7:[function(require,module,exports){
+},{"../utils/utils.intersect":9,"../utils/utils.keysDown.js":10,"../utils/utils.math":11}],7:[function(require,module,exports){
+// Modules
+var gameLoop = require('./core/game.loop.js'),
+    gameUpdate = require('./core/game.update.js'),
+    gameRender = require('./core/game.render.js'),
+    // Entities
+    playerEnt = require('./entities/player.js'),
+    boundaryEnt = require('./entities/boundary.js'),
+    buoyEnt = require('./entities/buoy.js'),
+    // Utilities
+    cUtils = require('./utils/utils.canvas.js'), // require our canvas utils
+    $container = document.getElementById('container');
+
+
+var map = {"boundaries":[[[47,133],[48,52],[108,34],[279,40],[464,35],[970,54],[1184,57],[1320,70],[1520,105],[1543,215],[1528,355],[1515,689],[1509,730],[1443,768],[1365,799],[1249,827],[1089,830],[1034,829],[978,828],[961,797],[953,788],[914,749],[884,698],[882,678],[884,663],[896,634],[919,622],[943,613],[971,608],[989,606],[1011,599],[1029,587],[1039,581],[1047,569],[1051,545],[1050,522],[1042,487],[1022,467],[991,451],[970,450],[926,449],[893,453],[862,463],[843,476],[808,500],[789,529],[758,579],[718,640],[706,663],[688,682],[645,694],[608,694],[525,700],[514,701],[466,703],[435,701],[423,698],[399,706],[384,724],[362,760],[336,779],[309,784],[259,790],[208,790],[186,789],[138,759],[63,516],[61,394],[46,118]],[[129,148],[170,139],[238,132],[281,130],[452,129],[638,137],[718,139],[827,139],[930,137],[1070,140],[1158,146],[1225,154],[1313,163],[1364,173],[1389,212],[1396,263],[1396,374],[1394,573],[1389,640],[1327,687],[1266,706],[1204,724],[1158,732],[1094,737],[1060,733],[1032,723],[1003,693],[1018,674],[1067,666],[1085,664],[1131,633],[1136,599],[1151,516],[1170,478],[1169,388],[1136,331],[1022,294],[872,305],[780,325],[721,432],[684,490],[639,547],[587,573],[516,592],[460,597],[347,598],[238,570],[212,503],[167,311],[147,233],[142,142]],[],[[204,704],[173,684],[172,657],[196,633],[231,627],[268,638],[279,669],[269,693],[218,706],[196,701]]],"buoys":[[104,94,120,1],[182,88,120,2],[265,83,120,3],[353,87,120,4],[452,80,120,5],[529,83,120,6],[594,82,120,7],[660,83,120,8],[720,86,120,9],[848,88,120,10],[930,87,120,11],[1029,91,120,12],[1119,99,120,13],[1201,103,120,14],[1302,107,120,15],[1390,130,120,16],[1441,146,120,17],[1471,194,120,18],[1468,302,120,19],[1459,409,120,20],[1458,490,120,21],[1438,576,120,22],[1428,659,120,23],[1400,714,120,24],[1300,756,120,25],[1210,762,120,26],[1081,777,120,27],[985,765,120,28],[973,724,120,29],[983,644,120,30],[1058,616,120,31],[1105,540,120,32],[1091,446,120,33],[1030,389,120,34],[938,376,120,35],[849,385,120,36],[770,453,120,37],[734,522,120,38],[650,592,120,39],[533,642,120,40],[439,645,120,41],[350,660,120,42],[270,665,120,43],[212,662,120,44],[149,555,120,45],[129,480,120,46],[107,378,120,47],[107,270,120,48],[101,201,120,49]]};
+
+const placeMode = "buoy";
+
+// https://github.com/zonetti/snake-neural-network/blob/49be7c056c871d0c8ab06329fc189255d137db26/src/runner.js
+// https://wagenaartje.github.io/neataptic/docs/neat/
+function Game(w, h, targetFps, showFps) {
+    var that;
+
+    // Setup some constants
+    this.constants = {
+        width: w,
+        height: h,
+        targetFps: targetFps,
+        showFps: showFps
+    };
+
+    // Instantiate an empty state object
+    this.state = {};
+
+  // Generate a canvas and store it as our viewport
+    this.viewport = cUtils.generateCanvas(w, h);
+
+
+
+    this.viewport.id = "gameViewport";
+
+    // Get and store the canvas context as a global
+    this.context = this.viewport.getContext('2d');
+
+    // Append viewport into our container within the dom
+    $container.insertBefore(this.viewport, $container.firstChild);
+
+    // Instantiate core modules with the current scope
+    this.update = gameUpdate( this );
+    this.render = gameRender( this );
+    this.loop = gameLoop( this );
+
+    this.state.entities = this.state.entities || {};
+
+    var activeBoundary = 0;
+    var boundaries = [ ];
+    var buoys = [ ];
+
+    // load game map
+    if (map) {
+        map.boundaries.forEach((boundary) => {
+
+            let b = new boundaryEnt(this, 'white');
+            boundaries.push(b);
+            this.state.entities['boundary'+Math.random()] = (b);
+
+            boundary.forEach((point) => {
+                b.addPoint({x: point[0], y: point[1] });
+            })
+        });
+        map.buoys.forEach((buoy) => {
+
+            let b = new buoyEnt(this, 'white');
+            b.setMarkPoint(buoy[0], buoy[1]);
+            b.setMarkRadius(buoy[2]);
+            b.setMarkScore(buoy[3]);
+            buoys.push(b);
+            this.state.entities['buoy'+Math.random()] = (b);
+
+        });
+    }
+
+
+    require('./utils/utils.keysDown')((e) => {
+
+
+        if (e.KeyT) {
+            const output = {
+                boundaries: [],
+                buoys: []
+            };
+            boundaries.forEach((boundary) => {
+                output.boundaries.push(boundary.state.points)
+            });
+            buoys.forEach((buoy) => {
+                output.buoys.push([buoy.state.geometry.x, buoy.state.geometry.y, buoy.state.geometry.r, buoy.state.score]);
+            });
+            console.log(JSON.stringify(output));
+        }
+
+
+
+        if (placeMode === 'boundary') {
+
+            if (e.KeyS) {
+                activeBoundary += 1;
+                if (activeBoundary > boundaries.length - 1) {
+                    activeBoundary = boundaries.length - 1;
+                }
+            }
+            if (e.KeyA) {
+                activeBoundary -= 1;
+                if (activeBoundary < 0) {
+                    activeBoundary = 0;
+                }
+            }
+
+            if (e.KeyN) {
+                let b = new boundaryEnt(this, 'white');
+                boundaries.push(b);
+                this.state.entities['boundary' + Math.random()] = (b);
+            }
+            if (e.KeyZ) {
+                boundaries[activeBoundary].removeNewest();
+            }
+        }
+
+        if (placeMode === 'buoy') {
+
+            if (e.KeyZ) {
+                bouys.pop();
+                currentBuoyScore--;
+
+            }
+        }
+
+    });
+
+    let currentBuoyScore = 1;
+    this.viewport.addEventListener("mousedown", (evt) => {
+        if (placeMode === 'boundary') {
+            if (boundaries[activeBoundary])
+                boundaries[activeBoundary].addPoint({x: evt.clientX, y: evt.clientY});
+        }
+        if (placeMode === 'buoy') {
+            let b = new buoyEnt(this, 'red');
+            b.setMarkPoint(evt.clientX, evt.clientY);
+            b.setMarkRadius(120);
+            b.setMarkScore(currentBuoyScore);
+            // b.setMarkRadius(parseInt(prompt('Radius?', 60)));
+            // b.setMarkScore(parseInt(prompt('Score Value', currentBuoyScore)));
+            currentBuoyScore++;
+            buoys.push(b);
+            this.state.entities['buoy' + Math.random()] = (b);
+        }
+    }, false);
+
+
+    this.state.entities.player = new playerEnt(this, 100, 100, () => {
+        return {
+            boundaries,
+            buoys
+        }
+    }, () => {
+        console.log('GAME OVER');
+
+    });
+
+
+    return this;
+}
+
+// Instantiate a new game in the global scope at 800px by 600px
+window.game = new Game(1600, 900, 60, true);
+
+module.exports = game;
+},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./entities/boundary.js":4,"./entities/buoy.js":5,"./entities/player.js":6,"./utils/utils.canvas.js":8,"./utils/utils.keysDown":10}],8:[function(require,module,exports){
 module.exports = {
     /** Determine the proper pixel ratio for the canvas */
     getPixelRatio : function getPixelRatio(context) {
@@ -630,7 +744,7 @@ module.exports = {
       return canvas;
     }
 };
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 module.exports = (a,b,c,d,p,q,r,s) => {
@@ -645,7 +759,7 @@ module.exports = (a,b,c,d,p,q,r,s) => {
     }
 };
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /** keysDown Utility Module
  * Monitors and determines whether a key 
  * is pressed down at any given moment.
@@ -702,7 +816,7 @@ function keysDown(onDown, onUp) {
 }
 
 module.exports = keysDown;
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /** 
  * Number.prototype.boundary
  * Binds a number between a minimum and a maximum amount.
@@ -718,4 +832,4 @@ var Boundary = function numberBoundary(min, max) {
 // Expose methods
 Number.prototype.boundary = Boundary;
 module.exports = Boundary;
-},{}]},{},[4]);
+},{}]},{},[7]);
