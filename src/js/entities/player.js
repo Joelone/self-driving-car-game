@@ -33,7 +33,8 @@ function Player(scope, x, y, getObjects, gameOver) {
     var percentColors = [
         { pct: 0.0, color: { r: 0xff, g: 0x00, b: 0 } },
         { pct: 0.5, color: { r: 0xff, g: 0xff, b: 0 } },
-        { pct: 1.0, color: { r: 0x00, g: 0xff, b: 0 } } ];
+        { pct: 1.0, color: { r: 0x00, g: 0xff, b: 0 } }
+     ];
 
     var getColorForPercentage = function(pct) {
         for (var i = 1; i < percentColors.length - 1; i++) {
@@ -53,7 +54,6 @@ function Player(scope, x, y, getObjects, gameOver) {
             b: Math.floor(lower.color.b * pctLower + upper.color.b * pctUpper)
         };
         return 'rgb(' + [color.r, color.g, color.b].join(',') + ')';
-        // or output as hex if preferred
     };
 
 
@@ -121,6 +121,16 @@ function Player(scope, x, y, getObjects, gameOver) {
     };
 
     player.update = () => {
+
+
+
+        //detect game over
+        const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
+        if (timeDelta > 3000) {
+            return gameOver();
+        }
+
+
         const objects = getObjects();
 
         //detect new scores
@@ -134,12 +144,6 @@ function Player(scope, x, y, getObjects, gameOver) {
                 buoy.state.score = buoy.state.score + objects.buoys.length; // increment buoy score so we can loop infinitely
             }
         });
-
-        //detect game over
-        const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
-        if (timeDelta > 3000) {
-            return gameOver();
-        }
 
         // update lidar sensors
         for (let i = 0; i < sensors; i++) {

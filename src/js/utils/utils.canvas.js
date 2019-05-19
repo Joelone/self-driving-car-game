@@ -31,7 +31,7 @@ module.exports = {
           context = canvas.getContext('2d');
       // Pass our canvas' context to our getPixelRatio method
       var ratio = this.getPixelRatio(context);
-
+        canvas.className = 'viewport';
       // Set the canvas' width then downscale via CSS
       canvas.width = Math.round(w * ratio);
       canvas.height = Math.round(h * ratio);
