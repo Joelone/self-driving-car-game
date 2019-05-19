@@ -43,7 +43,7 @@ function Game(w, h, viewport, targetFps, showFps) {
     // Instantiate core modules with the current scope
     this.update = gameUpdate( this );
     this.render = gameRender( this );
-    this.loop = gameLoop( this );
+    this.loop = new gameLoop( this );
 
     this.state.entities = this.state.entities || {};
 
@@ -137,14 +137,14 @@ function Game(w, h, viewport, targetFps, showFps) {
             return;
         }
         if (placeMode === 'boundary') {
-            if (this.boundaries[activeBoundary])
-                this.boundaries[activeBoundary].addPoint({x: evt.clientX, y: evt.clientY});
+            if (this.boundaries[this.activeBoundary])
+                this.boundaries[this.activeBoundary].addPoint({x: evt.clientX, y: evt.clientY});
         }
         if (placeMode === 'buoy') {
             let b = new buoyEnt(this, 'red');
             b.setMarkPoint(evt.clientX, evt.clientY);
             b.setMarkRadius(120);
-            b.setMarkScore(currentBuoyScore);
+            b.setMarkScore(this.currentBuoyScore);
             // b.setMarkRadius(parseInt(prompt('Radius?', 60)));
             // b.setMarkScore(parseInt(prompt('Score Value', currentBuoyScore)));
             this.currentBuoyScore++;
@@ -169,8 +169,8 @@ function Game(w, h, viewport, targetFps, showFps) {
 }
 
 // Instantiate a new game in the global scope at 800px by 600px
-window.game = new Game(400, 400, 'container', 60, true);
-window.game2 = new Game(400, 400, 'container2', 60, true);
+window.game = new Game(1600, 900, 'container', 60, true);
+window.game2 = new Game(1600, 900, 'container2', 60, true);
 
 console.log(window.game);
 console.log(window.game2);
