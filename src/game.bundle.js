@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 /** Game Loop Module
  * This module contains the game loop, which handles
  * updating the game state and re-rendering the canvas
@@ -223,9 +223,11 @@ function Player(scope, x, y) {
     player.state = {
         position: {
             x: x,
-            y: y
+            y: y,
+            d: 0,
+            speed: 0.0
         },
-        moveSpeed: 1.5
+        moveSpeed: 0.25
     };
 
     // Set up any other constants
@@ -234,12 +236,46 @@ function Player(scope, x, y) {
 
     // Draw the player on the canvas
     player.render = function playerRender() {
-        scope.context.fillStyle = '#40d870';
-        scope.context.fillRect(
-            player.state.position.x,
-            player.state.position.y,
-            width, height
-        );
+
+
+        if (player.state.position.speed > 0) {
+            player.state.position.speed -= 0.1;
+        } else if (player.state.position.speed < 0) {
+            player.state.position.speed += 0.1;
+        }
+        player.state.position.speed = player.state.position.speed.boundary(-1, 5);
+
+
+        player.state.position.x = player.state.position.x + player.xForDA(player.state.position.d, player.state.position.speed);
+        player.state.position.y = player.state.position.y + player.yForDA(player.state.position.d, player.state.position.speed);
+        // Bind the player to the boundary
+        player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
+        player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
+
+
+        scope.context.fillStyle = '#FF7300';
+
+
+        scope.context.beginPath();
+        scope.context.arc(player.state.position.x, player.state.position.y, 10, 0, 2 * Math.PI);
+        scope.context.fill();
+
+
+        scope.context.beginPath();
+
+        scope.context.moveTo(player.state.position.x + player.xForDA(player.state.position.d, 20), player.state.position.y + player.yForDA(player.state.position.d, 20));
+        scope.context.lineTo(player.state.position.x + player.xForDA(player.state.position.d, -10), player.state.position.y + player.yForDA(player.state.position.d, -10));
+        scope.context.stroke();
+
+
+    };
+
+    player.xForDA = (angle, distance) => {
+        return (Math.cos(angle * Math.PI / 180) * distance);
+    };
+
+    player.yForDA = (angle, distance) => {
+        return (Math.sin(angle * Math.PI / 180) * distance);
     };
 
     // Fired via the global update method.
@@ -247,24 +283,21 @@ function Player(scope, x, y) {
     player.update = function playerUpdate() {
         // Check if keys are pressed, if so, update the players position.
         if (keys.isPressed.left) {
-            player.state.position.x -= player.state.moveSpeed;
+            player.state.position.d-=2;
         }
 
         if (keys.isPressed.right) {
-            player.state.position.x += player.state.moveSpeed;
+            player.state.position.d+=2;
         }
 
         if (keys.isPressed.up) {
-            player.state.position.y -= player.state.moveSpeed;
+            player.state.position.speed += player.state.moveSpeed;
         }
 
         if (keys.isPressed.down) {
-            player.state.position.y += player.state.moveSpeed;
+            player.state.position.speed -= player.state.moveSpeed;
         }
-
-        // Bind the player to the boundary
-        player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
-        player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
+        // player.state.position.speed = player.state.position.speed.boundary(-5, 5);
     };
 
     return player;
