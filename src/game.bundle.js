@@ -106,16 +106,16 @@ function gameRender( scope ) {
         // Clear out the canvas
         scope.context.clearRect(0, 0, w, h);
         
-        // Spit out some text
-        scope.context.font = '32px Arial';
-        scope.context.fillStyle = '#fff';
-        scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
+        // // Spit out some text
+        // scope.context.font = '32px Arial';
+        // scope.context.fillStyle = '#fff';
+        // scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
 
-        // If we want to show the FPS, then render it in the top right corner.
-        if (scope.constants.showFps) {
-            scope.context.fillStyle = '#ff0';
-            scope.context.fillText(scope.loop.fps, w - 100, 50);
-        }
+        // // If we want to show the FPS, then render it in the top right corner.
+        // if (scope.constants.showFps) {
+        //     scope.context.fillStyle = '#ff0';
+        //     scope.context.fillText(scope.loop.fps, w - 100, 50);
+        // }
 
         // If there are entities, iterate through them and call their `render` methods
         if (scope.state.hasOwnProperty('entities')) {
@@ -146,6 +146,8 @@ function gameUpdate ( scope ) {
             // Loop through entities
             for (var entity in entities) {
                 // Fire off each active entities `render` method
+                entities[entity].onInput();
+
                 entities[entity].update();
             }
         }
@@ -162,6 +164,7 @@ var gameLoop = require('./core/game.loop.js'),
     gameRender = require('./core/game.render.js'),
     // Entities
     playerEnt = require('./players/player.js'),
+    boundaryEnt = require('./players/boundary.js'),
     // Utilities
     cUtils = require('./utils/utils.canvas.js'), // require our canvas utils
     $container = document.getElementById('container');
@@ -197,9 +200,22 @@ function Game(w, h, targetFps, showFps) {
 
     that = this;
 
+    let boundaries;
+    let activeBoundary = 0;
+
+
+    var createBoundary = function createPlayer() {
+        that.state.entities = that.state.entities || {};
+        that.state.entities.boundary1 = (new boundaryEnt(that));
+        that.state.entities.boundary2 = (new boundaryEnt(that));
+    }();
+
+
     var createPlayer = function createPlayer() {
         that.state.entities = that.state.entities || {};
-        that.state.entities.player = new playerEnt(that, (w / 2), (h - 100));
+        that.state.entities.player = new playerEnt(that, 100, 100, () => {
+            return boundaries = [that.state.entities.boundary1, that.state.entities.boundary2];
+        });
     }();
 
     return this;
@@ -209,14 +225,69 @@ function Game(w, h, targetFps, showFps) {
 window.game = new Game(800, 600, 60, true);
 
 module.exports = game;
-},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./players/player.js":5,"./utils/utils.canvas.js":6}],5:[function(require,module,exports){
+},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./players/boundary.js":5,"./players/player.js":6,"./utils/utils.canvas.js":7}],5:[function(require,module,exports){
 var keys = require('../utils/utils.keysDown.js'),
     mathHelpers = require('../utils/utils.math.js');
 
 /** Player Module
  * Main player entity module.
  */
-function Player(scope, x, y) {
+function Boundary(scope, x, y) {
+    var boundary = this;
+
+    // Create the initial state
+    boundary.state = {
+        points: [
+            [100, 100],
+            [100, 200],
+            [200, 200]
+        ]
+    };
+
+    // Draw the player on the canvas
+    boundary.render = () => {
+
+        /* begin sensor suite*/
+
+        for (let i=0;i<Math.max(0, boundary.state.points.length - 1); i++) {
+            scope.context.beginPath();
+            scope.context.strokeStyle = 'green';
+            scope.context.lineWidth = '5';
+            scope.context.moveTo(boundary.state.points[i][0], boundary.state.points[i][1]);
+            scope.context.lineTo(boundary.state.points[i+1][0], boundary.state.points[i+1][1]);
+            scope.context.stroke();
+        }
+    };
+
+    boundary.xForDA = (angle, distance) => {
+        return (Math.cos(angle * Math.PI / 180) * distance);
+    };
+
+    boundary.yForDA = (angle, distance) => {
+        return (Math.sin(angle * Math.PI / 180) * distance);
+    };
+
+    boundary.onInput = () => {
+
+    };
+
+    boundary.update = () => {
+
+    };
+
+
+    return boundary;
+}
+
+module.exports = Boundary;
+},{"../utils/utils.keysDown.js":8,"../utils/utils.math.js":9}],6:[function(require,module,exports){
+var keys = require('../utils/utils.keysDown.js'),
+    mathHelpers = require('../utils/utils.math.js');
+
+/** Player Module
+ * Main player entity module.
+ */
+function Player(scope, x, y, boundaries) {
     var player = this;
 
     // Create the initial state
@@ -235,8 +306,66 @@ function Player(scope, x, y) {
         width = 16;
 
     // Draw the player on the canvas
-    player.render = function playerRender() {
+    player.render = () => {
 
+        scope.context.strokeStyle = 'white';
+        scope.context.lineWidth = '1';
+        /* begin sensor suite*/
+
+        for (let i = 0; i < 12; i++) {
+            const angle = player.state.position.d + (360 / 12) * i;
+
+            scope.context.beginPath();
+            scope.context.fillStyle = 'red';
+            scope.context.moveTo(player.state.position.x, player.state.position.y);
+            scope.context.lineTo(player.state.position.x + player.xForDA(angle, 100), player.state.position.y + player.yForDA(angle, 100));
+            scope.context.stroke();
+        }
+
+
+
+        scope.context.fillStyle = '#FF7300';
+
+        scope.context.beginPath();
+        scope.context.arc(player.state.position.x, player.state.position.y, 10, 0, 2 * Math.PI);
+        scope.context.fill();
+
+        scope.context.strokeStyle = 'black';
+
+        scope.context.beginPath();
+        scope.context.moveTo(player.state.position.x + player.xForDA(player.state.position.d, 20), player.state.position.y + player.yForDA(player.state.position.d, 20));
+        scope.context.lineTo(player.state.position.x + player.xForDA(player.state.position.d, -10), player.state.position.y + player.yForDA(player.state.position.d, -10));
+        scope.context.stroke();
+
+
+
+    };
+
+    player.xForDA = (angle, distance) => {
+        return (Math.cos(angle * Math.PI / 180) * distance);
+    };
+
+    player.yForDA = (angle, distance) => {
+        return (Math.sin(angle * Math.PI / 180) * distance);
+    };
+
+    player.onInput = () => {
+
+        if (keys.isPressed.ArrowLeft) {
+            player.state.position.d-=2;
+        }
+        if (keys.isPressed.ArrowRight) {
+            player.state.position.d+=2;
+        }
+        if (keys.isPressed.ArrowUp) {
+            player.state.position.speed += player.state.moveSpeed;
+        }
+        if (keys.isPressed.ArrowDown) {
+            player.state.position.speed -= player.state.moveSpeed;
+        }
+    };
+
+    player.update = () => {
 
         if (player.state.position.speed > 0) {
             player.state.position.speed -= 0.1;
@@ -253,58 +382,13 @@ function Player(scope, x, y) {
         player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
 
 
-        scope.context.fillStyle = '#FF7300';
-
-
-        scope.context.beginPath();
-        scope.context.arc(player.state.position.x, player.state.position.y, 10, 0, 2 * Math.PI);
-        scope.context.fill();
-
-
-        scope.context.beginPath();
-
-        scope.context.moveTo(player.state.position.x + player.xForDA(player.state.position.d, 20), player.state.position.y + player.yForDA(player.state.position.d, 20));
-        scope.context.lineTo(player.state.position.x + player.xForDA(player.state.position.d, -10), player.state.position.y + player.yForDA(player.state.position.d, -10));
-        scope.context.stroke();
-
-
-    };
-
-    player.xForDA = (angle, distance) => {
-        return (Math.cos(angle * Math.PI / 180) * distance);
-    };
-
-    player.yForDA = (angle, distance) => {
-        return (Math.sin(angle * Math.PI / 180) * distance);
-    };
-
-    // Fired via the global update method.
-    // Mutates state as needed for proper rendering next state
-    player.update = function playerUpdate() {
-        // Check if keys are pressed, if so, update the players position.
-        if (keys.isPressed.left) {
-            player.state.position.d-=2;
-        }
-
-        if (keys.isPressed.right) {
-            player.state.position.d+=2;
-        }
-
-        if (keys.isPressed.up) {
-            player.state.position.speed += player.state.moveSpeed;
-        }
-
-        if (keys.isPressed.down) {
-            player.state.position.speed -= player.state.moveSpeed;
-        }
-        // player.state.position.speed = player.state.position.speed.boundary(-5, 5);
     };
 
     return player;
 }
 
 module.exports = Player;
-},{"../utils/utils.keysDown.js":7,"../utils/utils.math.js":8}],6:[function(require,module,exports){
+},{"../utils/utils.keysDown.js":8,"../utils/utils.math.js":9}],7:[function(require,module,exports){
 module.exports = {
     /** Determine the proper pixel ratio for the canvas */
     getPixelRatio : function getPixelRatio(context) {
@@ -350,7 +434,7 @@ module.exports = {
       return canvas;
     }
 };
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /** keysDown Utility Module
  * Monitors and determines whether a key 
  * is pressed down at any given moment.
@@ -359,57 +443,50 @@ module.exports = {
 function keysDown() {
     this.isPressed = {};
 
-    var left, right, up, down;
+    const _isPressed = {};
+
+    const watchedKeys = [
+        'ArrowUp',
+        'ArrowLeft',
+        'ArrowDown',
+        'ArrowRight',
+        'KeyA',
+        'KeyZ',
+        'KeyS',
+        'KeyX'
+    ];
+
+
 
     // Set up `onkeydown` event handler.
     document.onkeydown = function (ev) {
-        if (ev.keyCode === 39) { right = true; }
-        if (ev.keyCode === 37) { left = true; }
-        if (ev.keyCode === 38) { up = true; }
-        if (ev.keyCode === 40) { down = true; }
+        _isPressed[ev.code] = true;
     };
 
     // Set up `onkeyup` event handler.
     document.onkeyup = function (ev) {
-        if (ev.keyCode === 39) { right = false; }
-        if (ev.keyCode === 37) { left = false; }
-        if (ev.keyCode === 38) { up = false; }
-        if (ev.keyCode === 40) { down = false; }
+        _isPressed[ev.code] = false;
     };
 
     // Define getters for each key
     // * Not strictly necessary. Could just return
     // * an object literal of methods, the syntactic
     // * sugar of `defineProperty` is just so much sweeter :)
-    Object.defineProperty(this.isPressed, 'left', {
-        get: function() { return left; },
-        configurable: true,
-        enumerable: true
-    });
 
-    Object.defineProperty(this.isPressed, 'right', {
-        get: function() { return right; },
-        configurable: true,
-        enumerable: true
-    });
+    watchedKeys.forEach((key) => {
+        Object.defineProperty(this.isPressed, key, {
+            get: () => { return _isPressed[key]; },
+            configurable: true,
+            enumerable: true
+        });
 
-    Object.defineProperty(this.isPressed, 'up', {
-        get: function() { return up; },
-        configurable: true,
-        enumerable: true
-    });
-
-    Object.defineProperty(this.isPressed, 'down', {
-        get: function() { return down; },
-        configurable: true,
-        enumerable: true
     });
 
     return this;
 }
 
 module.exports = keysDown();
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /** 
  * Number.prototype.boundary
  * Binds a number between a minimum and a maximum amount.

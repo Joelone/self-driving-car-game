@@ -4,6 +4,7 @@ var gameLoop = require('./core/game.loop.js'),
     gameRender = require('./core/game.render.js'),
     // Entities
     playerEnt = require('./players/player.js'),
+    boundaryEnt = require('./players/boundary.js'),
     // Utilities
     cUtils = require('./utils/utils.canvas.js'), // require our canvas utils
     $container = document.getElementById('container');
@@ -39,9 +40,22 @@ function Game(w, h, targetFps, showFps) {
 
     that = this;
 
+    let boundaries;
+    let activeBoundary = 0;
+
+
+    var createBoundary = function createPlayer() {
+        that.state.entities = that.state.entities || {};
+        that.state.entities.boundary1 = (new boundaryEnt(that));
+        that.state.entities.boundary2 = (new boundaryEnt(that));
+    }();
+
+
     var createPlayer = function createPlayer() {
         that.state.entities = that.state.entities || {};
-        that.state.entities.player = new playerEnt(that, (w / 2), (h - 100));
+        that.state.entities.player = new playerEnt(that, 100, 100, () => {
+            return boundaries = [that.state.entities.boundary1, that.state.entities.boundary2];
+        });
     }();
 
     return this;

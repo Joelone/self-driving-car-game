@@ -14,16 +14,16 @@ function gameRender( scope ) {
         // Clear out the canvas
         scope.context.clearRect(0, 0, w, h);
         
-        // Spit out some text
-        scope.context.font = '32px Arial';
-        scope.context.fillStyle = '#fff';
-        scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
+        // // Spit out some text
+        // scope.context.font = '32px Arial';
+        // scope.context.fillStyle = '#fff';
+        // scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
 
-        // If we want to show the FPS, then render it in the top right corner.
-        if (scope.constants.showFps) {
-            scope.context.fillStyle = '#ff0';
-            scope.context.fillText(scope.loop.fps, w - 100, 50);
-        }
+        // // If we want to show the FPS, then render it in the top right corner.
+        // if (scope.constants.showFps) {
+        //     scope.context.fillStyle = '#ff0';
+        //     scope.context.fillText(scope.loop.fps, w - 100, 50);
+        // }
 
         // If there are entities, iterate through them and call their `render` methods
         if (scope.state.hasOwnProperty('entities')) {

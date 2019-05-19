@@ -13,6 +13,8 @@ function gameUpdate ( scope ) {
             // Loop through entities
             for (var entity in entities) {
                 // Fire off each active entities `render` method
+                entities[entity].onInput();
+
                 entities[entity].update();
             }
         }
