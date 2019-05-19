@@ -23,7 +23,7 @@ function Player(scope, x, y, getObjects) {
     var height = 23,
         width = 16;
 
-    const sensors = 16;
+    const sensors = 12;
 
     const threshold = 1;
     let lookDistances = [...Array(500/threshold).keys()];
@@ -60,16 +60,10 @@ function Player(scope, x, y, getObjects) {
 
         scope.context.strokeStyle = 'white';
         scope.context.lineWidth = '1';
-
         /* begin sensor view*/
-
         for (let i = 0; i < sensors; i++) {
             const angle = player.state.position.d + (360 / sensors) * i;
-
             scope.context.beginPath();
-            if (i == 0) {
-                console.log(getColorForPercentage(player.state.sensors[i] / 500))
-            }
             scope.context.strokeStyle = getColorForPercentage(player.state.sensors[i] / 500);
             scope.context.moveTo(player.state.position.x, player.state.position.y);
             scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
@@ -77,22 +71,18 @@ function Player(scope, x, y, getObjects) {
         }
 
 
-
+        // Draw player
         scope.context.fillStyle = '#FF7300';
-
         scope.context.beginPath();
         scope.context.arc(player.state.position.x, player.state.position.y, 10, 0, 2 * Math.PI);
         scope.context.fill();
 
+        // Draw line so we can tell direction visually
         scope.context.strokeStyle = 'black';
-
         scope.context.beginPath();
         scope.context.moveTo(player.state.position.x + player.xForDA(player.state.position.d, 20), player.state.position.y + player.yForDA(player.state.position.d, 20));
         scope.context.lineTo(player.state.position.x + player.xForDA(player.state.position.d, -10), player.state.position.y + player.yForDA(player.state.position.d, -10));
         scope.context.stroke();
-
-
-
     };
 
     player.xForDA = (angle, distance) => {
@@ -190,7 +180,7 @@ function Player(scope, x, y, getObjects) {
 
         if (player.state.position.speed > 0) {
 
-            if (player.state.sensors[0] > 13) {
+            if (player.state.sensors[0] > 16) {
 
                 player.state.position.speed -= 0.1;
             }else {
@@ -200,7 +190,7 @@ function Player(scope, x, y, getObjects) {
         } else if (player.state.position.speed < 0) {
 
 
-            if (player.state.sensors[sensors/2] > 10) {
+            if (player.state.sensors[sensors/2] > 16) {
 
                 player.state.position.speed += 0.1;
             }else {

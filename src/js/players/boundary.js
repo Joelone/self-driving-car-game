@@ -46,7 +46,7 @@ function Boundary(scope, color) {
     };
 
     boundary.addPoint = (evt) => {
-        boundary.state.points.push([evt.clientX, evt.clientY]);
+        boundary.state.points.push([evt.x, evt.y]);
         boundary.state.dirty = true;
     };
     boundary.removeNewest = (evt) => {

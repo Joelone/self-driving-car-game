@@ -170,6 +170,8 @@ var gameLoop = require('./core/game.loop.js'),
     $container = document.getElementById('container');
 
 
+var map = [[[47,133],[48,52],[108,34],[279,40],[464,35],[970,54],[1184,57],[1320,70],[1520,105],[1543,215],[1528,355],[1515,689],[1509,730],[1443,768],[1365,799],[1249,827],[1089,830],[1034,829],[978,828],[961,797],[953,788],[914,749],[884,698],[882,678],[884,663],[896,634],[919,622],[943,613],[971,608],[989,606],[1011,599],[1029,587],[1039,581],[1047,569],[1051,545],[1050,522],[1042,487],[1022,467],[991,451],[970,450],[926,449],[893,453],[862,463],[843,476],[808,500],[789,529],[758,579],[718,640],[706,663],[688,682],[645,694],[608,694],[525,700],[514,701],[466,703],[435,701],[423,698],[399,706],[384,724],[362,760],[336,779],[309,784],[259,790],[208,790],[186,789],[138,759],[63,516],[61,394],[46,118]],[[129,148],[170,139],[238,132],[281,130],[452,129],[638,137],[718,139],[827,139],[930,137],[1070,140],[1158,146],[1225,154],[1313,163],[1364,173],[1389,212],[1396,263],[1396,374],[1394,573],[1389,640],[1327,687],[1266,706],[1204,724],[1158,732],[1094,737],[1060,733],[1032,723],[1003,693],[1018,674],[1067,666],[1085,664],[1131,633],[1136,599],[1151,516],[1170,478],[1169,388],[1136,331],[1022,294],[872,305],[780,325],[721,432],[684,490],[639,547],[587,573],[516,592],[460,597],[347,598],[238,570],[212,503],[167,311],[147,233],[142,142]],[],[[204,704],[173,684],[172,657],[196,633],[231,627],[268,638],[279,669],[269,693],[218,706],[196,701]]];
+
 // https://github.com/zonetti/snake-neural-network/blob/49be7c056c871d0c8ab06329fc189255d137db26/src/runner.js
 // https://wagenaartje.github.io/neataptic/docs/neat/
 function Game(w, h, targetFps, showFps) {
@@ -209,6 +211,21 @@ function Game(w, h, targetFps, showFps) {
     var activeBoundary = 0;
     var boundaries = [ ];
 
+    // load game map
+    if (map.length) {
+        map.forEach((boundary) => {
+
+            let b = new boundaryEnt(this, 'white');
+            boundaries.push(b);
+            this.state.entities['boundary'+Math.random()] = (b);
+
+            boundary.forEach((point) => {
+                b.addPoint({x: point[0], y: point[1] });
+            })
+        });
+    }
+
+
     require('./utils/utils.keysDown')((e) => {
         if (e.KeyS) {
             activeBoundary +=1;
@@ -244,7 +261,7 @@ function Game(w, h, targetFps, showFps) {
 
     this.viewport.addEventListener("mousedown", (evt) => {
         if (boundaries[activeBoundary])
-            boundaries[activeBoundary].addPoint(evt);
+            boundaries[activeBoundary].addPoint({ x: evt.clientX, y: evt.clientY });
     }, false);
 
 
@@ -259,7 +276,7 @@ function Game(w, h, targetFps, showFps) {
 }
 
 // Instantiate a new game in the global scope at 800px by 600px
-window.game = new Game(800, 600, 60, true);
+window.game = new Game(1600, 900, 60, true);
 
 module.exports = game;
 },{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./players/boundary.js":5,"./players/player.js":6,"./utils/utils.canvas.js":7,"./utils/utils.keysDown":9}],5:[function(require,module,exports){
@@ -311,7 +328,7 @@ function Boundary(scope, color) {
     };
 
     boundary.addPoint = (evt) => {
-        boundary.state.points.push([evt.clientX, evt.clientY]);
+        boundary.state.points.push([evt.x, evt.y]);
         boundary.state.dirty = true;
     };
     boundary.removeNewest = (evt) => {
@@ -366,7 +383,7 @@ function Player(scope, x, y, getObjects) {
     var height = 23,
         width = 16;
 
-    const sensors = 16;
+    const sensors = 12;
 
     const threshold = 1;
     let lookDistances = [...Array(500/threshold).keys()];
@@ -403,16 +420,10 @@ function Player(scope, x, y, getObjects) {
 
         scope.context.strokeStyle = 'white';
         scope.context.lineWidth = '1';
-
         /* begin sensor view*/
-
         for (let i = 0; i < sensors; i++) {
             const angle = player.state.position.d + (360 / sensors) * i;
-
             scope.context.beginPath();
-            if (i == 0) {
-                console.log(getColorForPercentage(player.state.sensors[i] / 500))
-            }
             scope.context.strokeStyle = getColorForPercentage(player.state.sensors[i] / 500);
             scope.context.moveTo(player.state.position.x, player.state.position.y);
             scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
@@ -420,22 +431,18 @@ function Player(scope, x, y, getObjects) {
         }
 
 
-
+        // Draw player
         scope.context.fillStyle = '#FF7300';
-
         scope.context.beginPath();
         scope.context.arc(player.state.position.x, player.state.position.y, 10, 0, 2 * Math.PI);
         scope.context.fill();
 
+        // Draw line so we can tell direction visually
         scope.context.strokeStyle = 'black';
-
         scope.context.beginPath();
         scope.context.moveTo(player.state.position.x + player.xForDA(player.state.position.d, 20), player.state.position.y + player.yForDA(player.state.position.d, 20));
         scope.context.lineTo(player.state.position.x + player.xForDA(player.state.position.d, -10), player.state.position.y + player.yForDA(player.state.position.d, -10));
         scope.context.stroke();
-
-
-
     };
 
     player.xForDA = (angle, distance) => {
@@ -533,7 +540,7 @@ function Player(scope, x, y, getObjects) {
 
         if (player.state.position.speed > 0) {
 
-            if (player.state.sensors[0] > 13) {
+            if (player.state.sensors[0] > 16) {
 
                 player.state.position.speed -= 0.1;
             }else {
@@ -543,7 +550,7 @@ function Player(scope, x, y, getObjects) {
         } else if (player.state.position.speed < 0) {
 
 
-            if (player.state.sensors[sensors/2] > 10) {
+            if (player.state.sensors[sensors/2] > 16) {
 
                 player.state.position.speed += 0.1;
             }else {
