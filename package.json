@@ -36,7 +36,7 @@
       "entries": [
         {
           "name": "game",
-          "path": "src/js/game.js",
+          "path": "src/js/main.js",
           "dest": "src/"
         }
       ]

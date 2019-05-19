@@ -26,7 +26,7 @@ function Player(scope, x, y, getObjects, gameOver) {
     var height = 23,
         width = 16;
 
-    const sensors = 12;
+    const sensors = 16;
 
     const threshold = 1;
     let lookDistances = [...Array(1024).keys()];
@@ -64,14 +64,14 @@ function Player(scope, x, y, getObjects, gameOver) {
         scope.context.strokeStyle = 'white';
         scope.context.lineWidth = '1';
         /* begin sensor view*/
-        for (let i = 0; i < sensors; i++) {
-            const angle = player.state.position.d + (360 / sensors) * i;
-            scope.context.beginPath();
-            scope.context.strokeStyle = getColorForPercentage(player.state.sensors[i] / 500);
-            scope.context.moveTo(player.state.position.x, player.state.position.y);
-            scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
-            scope.context.stroke();
-        }
+        // for (let i = 0; i < sensors; i++) {
+        //     const angle = player.state.position.d + (360 / sensors) * i;
+        //     scope.context.beginPath();
+        //     scope.context.strokeStyle = getColorForPercentage(player.state.sensors[i] / 500);
+        //     scope.context.moveTo(player.state.position.x, player.state.position.y);
+        //     scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
+        //     scope.context.stroke();
+        // }
 
 
         // Draw player
@@ -108,7 +108,7 @@ function Player(scope, x, y, getObjects, gameOver) {
     player.update = () => {
         //detect game over
         const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
-        if (timeDelta > 10000) {
+        if (timeDelta > 6000) {
             return gameOver();
         }
 
@@ -120,6 +120,9 @@ function Player(scope, x, y, getObjects, gameOver) {
             if (intersectingBuoy && buoy.state.score == player.state.score + 1) {
 
                 player.state.score = buoy.state.score; // winner!
+
+                getObjects().brain.score = buoy.state.score;// feed score/fitness data to NN
+
                 player.state.timeSinceLastScoreUpdate = Date.now();
 
                 buoy.state.score = buoy.state.score + objects.buoys.length; // increment buoy score so we can loop infinitely
@@ -218,21 +221,21 @@ function Player(scope, x, y, getObjects, gameOver) {
 
 
         // Generate neural network input
-        const networkInput = player.state.sensors;
+        const networkInput = [player.state.position.speed, ...player.state.sensors];
 
-
+        const output = getObjects().brain.activate(networkInput).map(o => Math.round(o))
 
         // accept new game input from the NN
-        if (keys.isPressed.ArrowLeft) {
+        if (output[0]) {
             player.state.position.d-=2.5;
         }
-        if (keys.isPressed.ArrowRight) {
+        if (output[1]) {
             player.state.position.d+=2.5;
         }
-        if (keys.isPressed.ArrowUp) {
+        if (output[2]) {
             player.state.position.speed += player.state.moveSpeed;
         }
-        if (keys.isPressed.ArrowDown) {
+        if (output[3]) {
             player.state.position.speed -= player.state.moveSpeed;
         }
     };

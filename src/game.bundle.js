@@ -120,10 +120,9 @@ function gameRender( scope ) {
         // Clear out the canvas
         scope.context.clearRect(0, 0, w, h);
         
-        // Spit out some text
-        // scope.context.font = '32px Arial';
-        // scope.context.fillStyle = '#fff';
-        // scope.context.fillText('It\'s dangerous to travel this route alone.', 5, 50);
+        scope.context.font = '32px Arial';
+        scope.context.fillStyle = '#fff';
+        scope.context.fillText(scope.gameName, 5, 50);
 
         // // If we want to show the FPS, then render it in the top right corner.
         // if (scope.constants.showFps) {
@@ -281,13 +280,13 @@ function Buoy(scope) {
     marker.update = () => { };
     marker.render = () => {
 
-        scope.context.fillStyle = 'rgba(255,0,0,0.25)';
-        scope.context.beginPath();
-        scope.context.arc(marker.state.geometry.x, marker.state.geometry.y, marker.state.geometry.r, 0, 2 * Math.PI);
-        scope.context.fill();
-        scope.context.fillStyle = 'white';
-
-        scope.context.fillText(marker.state.score, marker.state.geometry.x, marker.state.geometry.y);
+        // scope.context.fillStyle = 'rgba(255,0,0,0.25)';
+        // scope.context.beginPath();
+        // scope.context.arc(marker.state.geometry.x, marker.state.geometry.y, marker.state.geometry.r, 0, 2 * Math.PI);
+        // scope.context.fill();
+        // scope.context.fillStyle = 'white';
+        //
+        // scope.context.fillText(marker.state.score, marker.state.geometry.x, marker.state.geometry.y);
     }
 }
 
@@ -321,7 +320,7 @@ function Player(scope, x, y, getObjects, gameOver) {
     var height = 23,
         width = 16;
 
-    const sensors = 12;
+    const sensors = 16;
 
     const threshold = 1;
     let lookDistances = [...Array(1024).keys()];
@@ -359,14 +358,14 @@ function Player(scope, x, y, getObjects, gameOver) {
         scope.context.strokeStyle = 'white';
         scope.context.lineWidth = '1';
         /* begin sensor view*/
-        for (let i = 0; i < sensors; i++) {
-            const angle = player.state.position.d + (360 / sensors) * i;
-            scope.context.beginPath();
-            scope.context.strokeStyle = getColorForPercentage(player.state.sensors[i] / 500);
-            scope.context.moveTo(player.state.position.x, player.state.position.y);
-            scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
-            scope.context.stroke();
-        }
+        // for (let i = 0; i < sensors; i++) {
+        //     const angle = player.state.position.d + (360 / sensors) * i;
+        //     scope.context.beginPath();
+        //     scope.context.strokeStyle = getColorForPercentage(player.state.sensors[i] / 500);
+        //     scope.context.moveTo(player.state.position.x, player.state.position.y);
+        //     scope.context.lineTo(player.state.position.x + player.xForDA(angle, player.state.sensors[i]), player.state.position.y + player.yForDA(angle, player.state.sensors[i]));
+        //     scope.context.stroke();
+        // }
 
 
         // Draw player
@@ -403,7 +402,7 @@ function Player(scope, x, y, getObjects, gameOver) {
     player.update = () => {
         //detect game over
         const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
-        if (timeDelta > 10000) {
+        if (timeDelta > 6000) {
             return gameOver();
         }
 
@@ -415,6 +414,9 @@ function Player(scope, x, y, getObjects, gameOver) {
             if (intersectingBuoy && buoy.state.score == player.state.score + 1) {
 
                 player.state.score = buoy.state.score; // winner!
+
+                getObjects().brain.score = buoy.state.score;// feed score/fitness data to NN
+
                 player.state.timeSinceLastScoreUpdate = Date.now();
 
                 buoy.state.score = buoy.state.score + objects.buoys.length; // increment buoy score so we can loop infinitely
@@ -513,21 +515,21 @@ function Player(scope, x, y, getObjects, gameOver) {
 
 
         // Generate neural network input
-        const networkInput = player.state.sensors;
+        const networkInput = [player.state.position.speed, ...player.state.sensors];
 
-
+        const output = getObjects().brain.activate(networkInput).map(o => Math.round(o))
 
         // accept new game input from the NN
-        if (keys.isPressed.ArrowLeft) {
+        if (output[0]) {
             player.state.position.d-=2.5;
         }
-        if (keys.isPressed.ArrowRight) {
+        if (output[1]) {
             player.state.position.d+=2.5;
         }
-        if (keys.isPressed.ArrowUp) {
+        if (output[2]) {
             player.state.position.speed += player.state.moveSpeed;
         }
-        if (keys.isPressed.ArrowDown) {
+        if (output[3]) {
             player.state.position.speed -= player.state.moveSpeed;
         }
     };
@@ -536,7 +538,7 @@ function Player(scope, x, y, getObjects, gameOver) {
 }
 
 module.exports = Player;
-},{"../utils/utils.intersect":9,"../utils/utils.keysDown.js":10,"../utils/utils.math":11}],7:[function(require,module,exports){
+},{"../utils/utils.intersect":11,"../utils/utils.keysDown.js":12,"../utils/utils.math":13}],7:[function(require,module,exports){
 // Modules
 var gameLoop = require('./core/game.loop.js'),
     gameUpdate = require('./core/game.update.js'),
@@ -552,7 +554,7 @@ var gameLoop = require('./core/game.loop.js'),
 
 // https://github.com/zonetti/snake-neural-network/blob/49be7c056c871d0c8ab06329fc189255d137db26/src/runner.js
 // https://wagenaartje.github.io/neataptic/docs/neat/
-function Game(w, h, targetFps, showFps) {
+function Game(w, h, gameOver, brain, targetFps, showFps) {
     var map = {"boundaries":[[[47,133],[48,52],[108,34],[279,40],[464,35],[970,54],[1184,57],[1320,70],[1520,105],[1543,215],[1528,355],[1515,689],[1509,730],[1443,768],[1365,799],[1249,827],[1089,830],[1034,829],[978,828],[961,797],[953,788],[914,749],[884,698],[882,678],[884,663],[896,634],[919,622],[943,613],[971,608],[989,606],[1011,599],[1029,587],[1039,581],[1047,569],[1051,545],[1050,522],[1042,487],[1022,467],[991,451],[970,450],[926,449],[893,453],[862,463],[843,476],[808,500],[789,529],[758,579],[718,640],[706,663],[688,682],[645,694],[608,694],[525,700],[514,701],[466,703],[435,701],[423,698],[399,706],[384,724],[362,760],[336,779],[309,784],[259,790],[208,790],[186,789],[138,759],[63,516],[61,394],[46,118]],[[129,148],[170,139],[238,132],[281,130],[452,129],[638,137],[718,139],[827,139],[930,137],[1070,140],[1158,146],[1225,154],[1313,163],[1364,173],[1389,212],[1396,263],[1396,374],[1394,573],[1389,640],[1327,687],[1266,706],[1204,724],[1158,732],[1094,737],[1060,733],[1032,723],[1003,693],[1018,674],[1067,666],[1085,664],[1131,633],[1136,599],[1151,516],[1170,478],[1169,388],[1136,331],[1022,294],[872,305],[780,325],[721,432],[684,490],[639,547],[587,573],[516,592],[460,597],[347,598],[238,570],[212,503],[167,311],[147,233],[142,142]],[],[[204,704],[173,684],[172,657],[196,633],[231,627],[268,638],[279,669],[269,693],[218,706],[196,701]]],"buoys":[[104,94,120,1],[182,88,120,2],[265,83,120,3],[353,87,120,4],[452,80,120,5],[529,83,120,6],[594,82,120,7],[660,83,120,8],[720,86,120,9],[848,88,120,10],[930,87,120,11],[1029,91,120,12],[1119,99,120,13],[1201,103,120,14],[1302,107,120,15],[1390,130,120,16],[1441,146,120,17],[1471,194,120,18],[1468,302,120,19],[1459,409,120,20],[1458,490,120,21],[1438,576,120,22],[1428,659,120,23],[1400,714,120,24],[1300,756,120,25],[1210,762,120,26],[1081,777,120,27],[985,765,120,28],[973,724,120,29],[983,644,120,30],[1058,616,120,31],[1105,540,120,32],[1091,446,120,33],[1030,389,120,34],[938,376,120,35],[849,385,120,36],[770,453,120,37],[734,522,120,38],[650,592,120,39],[533,642,120,40],[439,645,120,41],[350,660,120,42],[270,665,120,43],[212,662,120,44],[149,555,120,45],[129,480,120,46],[107,378,120,47],[107,270,120,48],[101,201,120,49]]};
 
     const placeMode = "buoy";
@@ -564,7 +566,10 @@ function Game(w, h, targetFps, showFps) {
         targetFps: targetFps,
         showFps: showFps
     };
+    this.brain = brain;
     this.alive = true;
+
+    this.gameName = 'GAME'+Math.random();
 
     // Instantiate an empty state object
     this.state = {};
@@ -694,10 +699,12 @@ function Game(w, h, targetFps, showFps) {
     this.state.entities.player = new playerEnt(this, 100, 100, () => {
         return {
             boundaries: this.boundaries,
-            buoys: this.buoys
+            buoys: this.buoys,
+            brain: this.brain
         }
     }, () => {
         console.log('GAME OVER');
+        gameOver();
         this.destruct();
     });
 
@@ -712,14 +719,123 @@ function Game(w, h, targetFps, showFps) {
 }
 
 // Instantiate a new game in the global scope at 800px by 600px
-new Game(1600, 900, 60, true);
-new Game(1600, 900, 60, true);
-new Game(1600, 900, 60, true);
-new Game(1600, 900, 60, true);
-new Game(1600, 900, 60, true);
-new Game(1600, 900, 60, true);
+// new Game(1600, 900, 60, true);
 
-},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./entities/boundary.js":4,"./entities/buoy.js":5,"./entities/player.js":6,"./utils/utils.canvas.js":8,"./utils/utils.keysDown":10}],8:[function(require,module,exports){
+module.exports = Game;
+},{"./core/game.loop.js":1,"./core/game.render.js":2,"./core/game.update.js":3,"./entities/boundary.js":4,"./entities/buoy.js":5,"./entities/player.js":6,"./utils/utils.canvas.js":10,"./utils/utils.keysDown":12}],8:[function(require,module,exports){
+
+var NeuralNetworkTrainer = require('./neuralnetworktrainer')
+// game settings
+
+const GAMES = 15
+const GAME_SIZE = 100
+const GAME_UNIT = 5
+const FRAME_RATE = 45
+
+// game bottlenecks
+
+const LOWEST_SCORE_ALLOWED = 0
+
+// neural network settings
+
+const MUTATION_RATE = 0.5
+const MUTATION_AMOUNT = 3
+const ELITISM = Math.round(0.2 * GAMES)
+
+
+const Neat = neataptic.Neat;
+const Config = neataptic.Config;
+
+Config.warnings = false;
+
+const neat = new Neat(17, 4, null, {
+        popsize: GAMES,
+        elitism: ELITISM,
+        mutationRate: MUTATION_RATE,
+        mutationAmount: MUTATION_AMOUNT
+    }
+);
+
+
+let highestScore = 0
+
+const runner = new NeuralNetworkTrainer({
+    neat,
+    games: GAMES,
+    gameSize: GAME_SIZE,
+    gameUnit:  GAME_UNIT,
+    frameRate: FRAME_RATE,
+    lowestScoreAllowed: LOWEST_SCORE_ALLOWED,
+    onEndGeneration: ({generation, max}) => {
+
+        if (max > highestScore) {
+            highestScore = max
+        }
+
+        document.getElementById('generation').innerHTML = generation
+        document.getElementById('highest-score').innerHTML = highestScore
+    }
+})
+
+runner.startGeneration()
+
+},{"./neuralnetworktrainer":9}],9:[function(require,module,exports){
+var Game = require('./game');
+
+
+class NeuralNetworkTrainer{
+
+    constructor ({neat, games, gameSize, gameUnit, frameRate, lowestScoreAllowed, onEndGeneration}) {
+        this.neat = neat
+        this.games = []
+        this.numGames = games;
+        this.gamesFinished = 0
+        this.onEndGeneration = onEndGeneration;
+
+    }
+
+    startGeneration () {
+        this.gamesFinished = 0
+
+        for (let i = 0; i < this.numGames; i++) {
+            var brain = this.neat.population[i];
+            this.games[i] = new Game(1600, 900, () => this.endGeneration(), brain, 30, true);
+        }
+    }
+
+    endGeneration () {
+        if (this.gamesFinished + 1 < this.games.length) {
+            this.gamesFinished++
+            return
+        }
+
+        this.neat.sort()
+
+        this.onEndGeneration({
+            generation: this.neat.generation,
+            max: this.neat.getFittest().score
+        })
+
+        const newGeneration = []
+
+        for (let i = 0; i < this.neat.elitism; i++) {
+            newGeneration.push(this.neat.population[i])
+        }
+
+        for (let i = 0; i < this.neat.popsize - this.neat.elitism; i++) {
+            newGeneration.push(this.neat.getOffspring())
+        }
+
+        this.neat.population = newGeneration
+        this.neat.mutate()
+        this.neat.generation++
+        this.startGeneration()
+    }
+
+}
+
+module.exports = NeuralNetworkTrainer;
+},{"./game":7}],10:[function(require,module,exports){
 module.exports = {
     /** Determine the proper pixel ratio for the canvas */
     getPixelRatio : function getPixelRatio(context) {
@@ -765,7 +881,7 @@ module.exports = {
       return canvas;
     }
 };
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 module.exports = (a,b,c,d,p,q,r,s) => {
@@ -780,7 +896,7 @@ module.exports = (a,b,c,d,p,q,r,s) => {
     }
 };
 
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /** keysDown Utility Module
  * Monitors and determines whether a key 
  * is pressed down at any given moment.
@@ -837,7 +953,7 @@ function keysDown(onDown, onUp) {
 }
 
 module.exports = keysDown;
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /** 
  * Number.prototype.boundary
  * Binds a number between a minimum and a maximum amount.
@@ -853,4 +969,4 @@ var Boundary = function numberBoundary(min, max) {
 // Expose methods
 Number.prototype.boundary = Boundary;
 module.exports = Boundary;
-},{}]},{},[7]);
+},{}]},{},[8]);

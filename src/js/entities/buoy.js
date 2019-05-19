@@ -31,13 +31,13 @@ function Buoy(scope) {
     marker.update = () => { };
     marker.render = () => {
 
-        scope.context.fillStyle = 'rgba(255,0,0,0.25)';
-        scope.context.beginPath();
-        scope.context.arc(marker.state.geometry.x, marker.state.geometry.y, marker.state.geometry.r, 0, 2 * Math.PI);
-        scope.context.fill();
-        scope.context.fillStyle = 'white';
-
-        scope.context.fillText(marker.state.score, marker.state.geometry.x, marker.state.geometry.y);
+        // scope.context.fillStyle = 'rgba(255,0,0,0.25)';
+        // scope.context.beginPath();
+        // scope.context.arc(marker.state.geometry.x, marker.state.geometry.y, marker.state.geometry.r, 0, 2 * Math.PI);
+        // scope.context.fill();
+        // scope.context.fillStyle = 'white';
+        //
+        // scope.context.fillText(marker.state.score, marker.state.geometry.x, marker.state.geometry.y);
     }
 }
 
