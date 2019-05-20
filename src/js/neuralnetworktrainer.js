@@ -44,8 +44,8 @@ class NeuralNetworkTrainer{
             newGeneration.push(this.neat.getOffspring())
         }
 
-        this.neat.population = newGeneration
-        this.neat.mutate()
+        this.neat.population = newGeneration;
+        this.neat.mutate();
         this.neat.generation++
         this.startGeneration()
     }

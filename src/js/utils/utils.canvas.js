@@ -35,8 +35,8 @@ module.exports = {
       // Set the canvas' width then downscale via CSS
       canvas.width = Math.round(w * ratio);
       canvas.height = Math.round(h * ratio);
-      canvas.style.width = w +'px';
-      canvas.style.height = h +'px';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
       // Scale the context so we get accurate pixel density
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
 

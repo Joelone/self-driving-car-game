@@ -2,7 +2,7 @@
 var NeuralNetworkTrainer = require('./neuralnetworktrainer')
 // game settings
 
-const GAMES = 15
+const GAMES = 20
 const GAME_SIZE = 100
 const GAME_UNIT = 5
 const FRAME_RATE = 45
@@ -53,3 +53,10 @@ const runner = new NeuralNetworkTrainer({
 })
 
 runner.startGeneration()
+
+window.saveNetwork = () => {
+    document.getElementById('pastebin').value = JSON.stringify(runner.neat.export());
+};
+window.loadNetwork = () => {
+    runner.neat.import(JSON.parse(document.getElementById('pastebin').value));
+};

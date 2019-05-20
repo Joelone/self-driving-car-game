@@ -9,10 +9,19 @@
         <script src="vendor/js/modernizr-custom.js"></script>
     </head>
     <body>
-    <div id="status">
+    <div id="status" style="color: white; width: 100px; float: left;">
         <p>generation<br><span id="generation">0</span></p>
         <p>highest score<br><span id="highest-score">0</span></p>
     </div>
+
+    <div id="loadsave" style="color: black; width: 100px; float: left;">
+        <p><button onclick="window.saveNetwork()">Save</button></p>
+        <p><button onclick="window.loadNetwork()">Load</button></p>
+    </div>
+    <div id="inputarea" style="color: black; width: 100px; float: left;">
+        <textarea rows="6" cols="200" id="pastebin"></textarea>
+    </div>
+    <div style="clear:both;"></div>
 
     <div id="container"></div>
 

@@ -4,16 +4,16 @@ body {
   background: #383838;
 }
 
-#container {
-  width: 1600px;
-  height: 900px;
+#container  canvas {
+  width: 400px !important;
+  height: 225px !important;
 }
 
-#container2 {
-  width: 1600px;
-  height: 900px;
-}
 
 .viewport {
   transform: translate3d(0, 0, 0);
+  float: left;
+}
+.viewport:last-child{
+  float: none;
 }

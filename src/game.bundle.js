@@ -313,7 +313,8 @@ function Player(scope, x, y, getObjects, gameOver) {
         sensors: [],
         moveSpeed: 0.25,
         score: 0,
-        timeSinceLastScoreUpdate: Date.now()
+        timeSinceLastScoreUpdate: Date.now(),
+        start: Date.now()
     };
 
     // Set up any other constants
@@ -323,7 +324,7 @@ function Player(scope, x, y, getObjects, gameOver) {
     const sensors = 16;
 
     const threshold = 1;
-    let lookDistances = [...Array(1024).keys()];
+    let lookDistances = [...Array(256).keys()];
     var percentColors = [
         { pct: 0.0, color: { r: 0xff, g: 0x00, b: 0 } },
         { pct: 0.5, color: { r: 0xff, g: 0xff, b: 0 } },
@@ -357,7 +358,7 @@ function Player(scope, x, y, getObjects, gameOver) {
 
         scope.context.strokeStyle = 'white';
         scope.context.lineWidth = '1';
-        /* begin sensor view*/
+        // /* begin sensor view*/
         // for (let i = 0; i < sensors; i++) {
         //     const angle = player.state.position.d + (360 / sensors) * i;
         //     scope.context.beginPath();
@@ -400,6 +401,10 @@ function Player(scope, x, y, getObjects, gameOver) {
     };
 
     player.update = () => {
+
+        if ((player.state.start - Date.now()) > 60000) {
+            return gameOver();
+        }
         //detect game over
         const timeDelta = Math.abs(player.state.timeSinceLastScoreUpdate - Date.now());
         if (timeDelta > 6000) {
@@ -509,8 +514,6 @@ function Player(scope, x, y, getObjects, gameOver) {
         }
         player.state.position.x = player.state.position.x + player.xForDA(player.state.position.d, player.state.position.speed);
         player.state.position.y = player.state.position.y + player.yForDA(player.state.position.d, player.state.position.speed);
-        player.state.position.x = player.state.position.x.boundary(0, (scope.constants.width - width));
-        player.state.position.y = player.state.position.y.boundary(0, (scope.constants.height - height));
 
 
 
@@ -727,7 +730,7 @@ module.exports = Game;
 var NeuralNetworkTrainer = require('./neuralnetworktrainer')
 // game settings
 
-const GAMES = 15
+const GAMES = 20
 const GAME_SIZE = 100
 const GAME_UNIT = 5
 const FRAME_RATE = 45
@@ -779,6 +782,12 @@ const runner = new NeuralNetworkTrainer({
 
 runner.startGeneration()
 
+window.saveNetwork = () => {
+    document.getElementById('pastebin').value = JSON.stringify(runner.neat.export());
+};
+window.loadNetwork = () => {
+    runner.neat.import(JSON.parse(document.getElementById('pastebin').value));
+};
 },{"./neuralnetworktrainer":9}],9:[function(require,module,exports){
 var Game = require('./game');
 
@@ -826,8 +835,8 @@ class NeuralNetworkTrainer{
             newGeneration.push(this.neat.getOffspring())
         }
 
-        this.neat.population = newGeneration
-        this.neat.mutate()
+        this.neat.population = newGeneration;
+        this.neat.mutate();
         this.neat.generation++
         this.startGeneration()
     }
@@ -873,8 +882,8 @@ module.exports = {
       // Set the canvas' width then downscale via CSS
       canvas.width = Math.round(w * ratio);
       canvas.height = Math.round(h * ratio);
-      canvas.style.width = w +'px';
-      canvas.style.height = h +'px';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
       // Scale the context so we get accurate pixel density
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
 
