@@ -762,7 +762,7 @@ const neat = new Neat(17, 4, null, {
 
 let highestScore = 0
 
-const runner = new NeuralNetworkTrainer({
+let runner = new NeuralNetworkTrainer({
     neat,
     games: GAMES,
     gameSize: GAME_SIZE,
@@ -780,13 +780,22 @@ const runner = new NeuralNetworkTrainer({
     }
 })
 
-runner.startGeneration()
 
 window.saveNetwork = () => {
-    document.getElementById('pastebin').value = JSON.stringify(runner.neat.export());
+    document.getElementById('pastebin').value = runner.neat.export().toJSON();
 };
+
 window.loadNetwork = () => {
     runner.neat.import(JSON.parse(document.getElementById('pastebin').value));
+
+    runner.startGeneration()
+
+};
+
+window.newNetwork = () => {
+
+    runner.startGeneration()
+
 };
 },{"./neuralnetworktrainer":9}],9:[function(require,module,exports){
 var Game = require('./game');
