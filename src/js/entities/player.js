@@ -108,7 +108,7 @@ function Player(scope, x, y, getObjects, gameOver) {
 
     player.update = () => {
 
-        if ((player.state.start - Date.now()) > 60000) {
+        if ((Date.now() - player.state.start) > 60000) {
             return gameOver();
         }
         //detect game over
